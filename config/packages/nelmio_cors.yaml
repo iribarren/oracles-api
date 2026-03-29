@@ -1,0 +1,17 @@
+nelmio_cors:
+    defaults:
+        # Exact string match (origin_regex: false) — CORS_ALLOW_ORIGIN must be the
+        # literal origin, e.g. "http://localhost:3000". No regex needed for dev.
+        origin_regex: false
+        allow_origin: ['%env(CORS_ALLOW_ORIGIN)%']
+        allow_methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
+        allow_headers: ['Content-Type', 'Authorization']
+        expose_headers: ['Link']
+        max_age: 3600
+    paths:
+        # Only API routes receive CORS headers; other paths are not exposed
+        '^/api/':
+            allow_origin: ['%env(CORS_ALLOW_ORIGIN)%']
+            allow_methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
+            allow_headers: ['Content-Type', 'Authorization']
+            max_age: 3600

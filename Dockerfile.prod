@@ -1,0 +1,98 @@
+# ── Stage 1: build ────────────────────────────────────────────────────────────
+# Uses the CLI image (lighter than fpm, no FPM overhead needed during build).
+FROM php:8.3-cli AS build
+
+# Install build-time system dependencies only.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
+    unzip \
+    libicu-dev \
+    libzip-dev \
+    && docker-php-ext-install pdo_mysql intl zip \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Pull Composer from its official image.
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+WORKDIR /var/www/backend
+
+# Copy dependency manifests first — allows Docker to cache the vendor layer
+# separately and only re-run composer install when composer.json/lock changes.
+COPY composer.json composer.lock ./
+
+RUN composer install \
+    --no-dev \
+    --no-scripts \
+    --no-autoloader \
+    --no-interaction \
+    --prefer-dist
+
+# Copy the full application source.
+COPY . .
+
+# Generate the optimised autoloader. --classmap-authoritative tells Composer
+# that every class will be found in the classmap — safe for production because
+# we have no dynamic class discovery outside the standard PSR-4 map.
+RUN composer dump-autoload \
+    --no-dev \
+    --optimize \
+    --classmap-authoritative
+
+# Warm the Symfony container and routing caches so the first request is fast.
+# APP_ENV must be prod so the correct cache profile is built.
+RUN APP_ENV=prod php bin/console cache:warmup --no-debug
+
+
+# ── Stage 2: production ────────────────────────────────────────────────────────
+# Only the PHP-FPM runtime and the pre-built application are included.
+# No Composer, no git, no dev tools, no XDebug.
+FROM php:8.3-fpm AS production
+
+# Install only the PHP extensions required at runtime.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libicu-dev \
+    libzip-dev \
+    && docker-php-ext-install pdo_mysql intl zip opcache \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# ── OPcache configuration ──────────────────────────────────────────────────────
+# validate_timestamps=0: skip file-stat checks on every request (safe because
+#   the image is immutable — files never change while the container is running).
+# preload: loads the most-used Symfony classes into shared memory at FPM startup,
+#   eliminating their autoload cost on every request.
+RUN { \
+    echo "opcache.enable=1"; \
+    echo "opcache.memory_consumption=256"; \
+    echo "opcache.max_accelerated_files=20000"; \
+    echo "opcache.validate_timestamps=0"; \
+    echo "opcache.preload=/var/www/backend/config/preload.php"; \
+    echo "opcache.preload_user=www-data"; \
+} > /usr/local/etc/php/conf.d/opcache.prod.ini
+
+# ── PHP-FPM pool configuration ─────────────────────────────────────────────────
+# Dynamic process manager: spawns extra workers under load and reaps them when
+# idle, balancing memory use with throughput.
+RUN { \
+    echo "[www]"; \
+    echo "pm = dynamic"; \
+    echo "pm.max_children = 50"; \
+    echo "pm.start_servers = 5"; \
+    echo "pm.min_spare_servers = 5"; \
+    echo "pm.max_spare_servers = 35"; \
+    echo "pm.max_requests = 500"; \
+} > /usr/local/etc/php-fpm.d/zz-prod.conf
+
+WORKDIR /var/www/backend
+
+# Copy the fully-built application from the build stage.
+# Nothing from the build image (Composer, git, dev packages) carries over.
+COPY --from=build /var/www/backend /var/www/backend
+
+# Ensure var/ is writable by www-data (Symfony writes logs and cache here).
+# The public/ directory permissions are read-only for nginx.
+RUN chown -R www-data:www-data /var/www/backend/var \
+    && chmod -R 755 /var/www/backend/public
+
+USER www-data
