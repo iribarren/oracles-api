@@ -46,6 +46,10 @@ Symfony 7.2 REST API for TTRPG games. Currently powers "The Library" (La Bibliot
 - Fixtures in `src/DataFixtures/` — seeds oracle data + admin user
 - UUID for GameSession PK, auto-increment integers for other entities
 
+## Unit tests.
+- Every new development must maintain the code coverage, with meaningful tests
+- Before commiting a new feature, the test must run currectly
+
 ## Docker
 - `Dockerfile` — development (PHP 8.3-FPM + Xdebug)
 - `Dockerfile.prod` — multi-stage production build (opcache, no dev dependencies)
