@@ -10,6 +10,11 @@ security:
         dev:
             pattern: ^/(_(profiler|wdt)|css|images|js)/
             security: false
+        api:
+            pattern: ^/api
+            stateless: true
+            provider: app_user_provider
+            jwt: ~
         admin:
             pattern: ^/admin
             lazy: true
@@ -27,6 +32,8 @@ security:
     access_control:
         - { path: ^/admin/login, roles: PUBLIC_ACCESS }
         - { path: ^/admin, roles: ROLE_ADMIN }
+        - { path: ^/api/auth, roles: PUBLIC_ACCESS }
+        - { path: ^/api/player, roles: ROLE_PLAYER }
 
 when@test:
     security:
