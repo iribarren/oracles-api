@@ -29,9 +29,10 @@ class GameEngine
     /**
      * Creates a new game session in PROLOGUE phase with three default attributes.
      */
-    public function createGame(?User $owner = null): GameSession
+    public function createGame(string $gameMode = 'aventura_rapida', ?User $owner = null): GameSession
     {
         $game = new GameSession();
+        $game->setGameMode($gameMode);
 
         foreach (AttributeType::cases() as $type) {
             $attribute = new Attribute();

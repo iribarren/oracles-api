@@ -18,6 +18,7 @@ use App\Security\GameSessionVoter;
 use App\Service\GameEngine;
 use InvalidArgumentException;
 use LogicException;
+use OpenApi\Attributes as OA;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -51,14 +52,44 @@ class GameController extends AbstractController
     // POST /api/game — Create new game
     // -------------------------------------------------------------------------
 
+    /** Allowed game mode identifiers. Extend this list as new modes are added. */
+    private const array ALLOWED_GAME_MODES = ['aventura_rapida'];
+
+    #[OA\Post(
+        path: '/api/game',
+        operationId: 'createGame',
+        summary: 'Create a new game session',
+        tags: ['Game'],
+        requestBody: new OA\RequestBody(
+            required: false,
+            content: new OA\JsonContent(properties: [
+                new OA\Property(property: 'game_mode', type: 'string', enum: ['aventura_rapida'], default: 'aventura_rapida'),
+            ])
+        ),
+        responses: [
+            new OA\Response(response: 201, description: 'Game created', content: new OA\JsonContent(ref: '#/components/schemas/GameSession')),
+            new OA\Response(response: 422, description: 'Validation failed', content: new OA\JsonContent(ref: '#/components/schemas/ValidationError')),
+            new OA\Response(response: 400, description: 'Business rule violation', content: new OA\JsonContent(ref: '#/components/schemas/Error')),
+        ]
+    )]
     #[Route('', name: 'api_game_create', methods: ['POST'])]
-    public function create(): JsonResponse
+    public function create(Request $request): JsonResponse
     {
         /** @var User|null $user */
         $user = $this->getUser();
 
+        $data     = $this->decodeJson($request) ?? [];
+        $gameMode = \trim((string) ($data['game_mode'] ?? 'aventura_rapida'));
+
+        if (!\in_array($gameMode, self::ALLOWED_GAME_MODES, true)) {
+            return $this->json(
+                ['error' => 'Validation failed', 'details' => ['game_mode' => 'Unknown game mode.']],
+                422,
+            );
+        }
+
         try {
-            $game = $this->gameEngine->createGame($user);
+            $game = $this->gameEngine->createGame($gameMode, $user);
         } catch (LogicException | InvalidArgumentException $e) {
             return $this->json(['error' => $e->getMessage()], 400);
         }
@@ -70,6 +101,19 @@ class GameController extends AbstractController
     // GET /api/games — List all game sessions (most recent first)
     // -------------------------------------------------------------------------
 
+    #[OA\Get(
+        path: '/api/games',
+        operationId: 'listGames',
+        summary: 'List all game sessions (most recent first)',
+        tags: ['Game'],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Array of game summaries',
+                content: new OA\JsonContent(type: 'array', items: new OA\Items(ref: '#/components/schemas/GameSummary'))
+            ),
+        ]
+    )]
     #[Route('s', name: 'api_games_list', methods: ['GET'])]
     public function list(): JsonResponse
     {
@@ -95,6 +139,19 @@ class GameController extends AbstractController
     // GET /api/game/{id}/export — Export full journal document
     // -------------------------------------------------------------------------
 
+    #[OA\Get(
+        path: '/api/game/{id}/export',
+        operationId: 'exportGame',
+        summary: 'Export full journal document (print-ready)',
+        tags: ['Game'],
+        parameters: [
+            new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid')),
+        ],
+        responses: [
+            new OA\Response(response: 200, description: 'Journal export document', content: new OA\JsonContent(ref: '#/components/schemas/GameExport')),
+            new OA\Response(response: 404, description: 'Game not found', content: new OA\JsonContent(ref: '#/components/schemas/Error')),
+        ]
+    )]
     #[Route('/{id}/export', name: 'api_game_export', methods: ['GET'])]
     public function export(string $id): JsonResponse
     {
@@ -177,6 +234,19 @@ class GameController extends AbstractController
     // GET /api/game/{id} — Get full game state
     // -------------------------------------------------------------------------
 
+    #[OA\Get(
+        path: '/api/game/{id}',
+        operationId: 'getGame',
+        summary: 'Get full game state',
+        tags: ['Game'],
+        parameters: [
+            new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid')),
+        ],
+        responses: [
+            new OA\Response(response: 200, description: 'Full game state', content: new OA\JsonContent(ref: '#/components/schemas/GameSession')),
+            new OA\Response(response: 404, description: 'Game not found', content: new OA\JsonContent(ref: '#/components/schemas/Error')),
+        ]
+    )]
     #[Route('/{id}', name: 'api_game_get', methods: ['GET'])]
     public function get(string $id): JsonResponse
     {
@@ -196,6 +266,33 @@ class GameController extends AbstractController
     // POST /api/game/{id}/prologue — Complete prologue
     // -------------------------------------------------------------------------
 
+    #[OA\Post(
+        path: '/api/game/{id}/prologue',
+        operationId: 'completePrologue',
+        summary: 'Complete the prologue and set character details',
+        tags: ['Game'],
+        parameters: [
+            new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid')),
+        ],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ['character_name', 'character_description', 'genre', 'epoch'],
+                properties: [
+                    new OA\Property(property: 'character_name', type: 'string', maxLength: 255),
+                    new OA\Property(property: 'character_description', type: 'string'),
+                    new OA\Property(property: 'genre', type: 'string'),
+                    new OA\Property(property: 'epoch', type: 'string'),
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(response: 200, description: 'Updated game state', content: new OA\JsonContent(ref: '#/components/schemas/GameSession')),
+            new OA\Response(response: 400, description: 'Invalid request or business rule violation', content: new OA\JsonContent(ref: '#/components/schemas/Error')),
+            new OA\Response(response: 404, description: 'Game not found', content: new OA\JsonContent(ref: '#/components/schemas/Error')),
+            new OA\Response(response: 422, description: 'Validation failed', content: new OA\JsonContent(ref: '#/components/schemas/ValidationError')),
+        ]
+    )]
     #[Route('/{id}/prologue', name: 'api_game_prologue', methods: ['POST'])]
     public function prologue(string $id, Request $request): JsonResponse
     {
@@ -258,6 +355,20 @@ class GameController extends AbstractController
     // POST /api/game/{id}/chapter/book — Generate chapter book
     // -------------------------------------------------------------------------
 
+    #[OA\Post(
+        path: '/api/game/{id}/chapter/book',
+        operationId: 'generateChapterBook',
+        summary: 'Generate a mystery book for the current chapter',
+        tags: ['Game'],
+        parameters: [
+            new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid')),
+        ],
+        responses: [
+            new OA\Response(response: 200, description: 'Generated book', content: new OA\JsonContent(ref: '#/components/schemas/Book')),
+            new OA\Response(response: 400, description: 'Business rule violation', content: new OA\JsonContent(ref: '#/components/schemas/Error')),
+            new OA\Response(response: 404, description: 'Game not found', content: new OA\JsonContent(ref: '#/components/schemas/Error')),
+        ]
+    )]
     #[Route('/{id}/chapter/book', name: 'api_game_chapter_book', methods: ['POST'])]
     public function chapterBook(string $id): JsonResponse
     {
@@ -283,6 +394,31 @@ class GameController extends AbstractController
     // POST /api/game/{id}/chapter/roll — Resolve chapter roll
     // -------------------------------------------------------------------------
 
+    #[OA\Post(
+        path: '/api/game/{id}/chapter/roll',
+        operationId: 'resolveChapterRoll',
+        summary: 'Resolve a chapter roll using an attribute (rate-limited: 30/min)',
+        tags: ['Game'],
+        parameters: [
+            new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid')),
+        ],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ['attribute'],
+                properties: [
+                    new OA\Property(property: 'attribute', type: 'string', enum: ['body', 'mind', 'social']),
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(response: 200, description: 'Roll result and updated game state', content: new OA\JsonContent(ref: '#/components/schemas/RollResponse')),
+            new OA\Response(response: 400, description: 'Business rule violation', content: new OA\JsonContent(ref: '#/components/schemas/Error')),
+            new OA\Response(response: 404, description: 'Game not found', content: new OA\JsonContent(ref: '#/components/schemas/Error')),
+            new OA\Response(response: 422, description: 'Invalid attribute', content: new OA\JsonContent(ref: '#/components/schemas/ValidationError')),
+            new OA\Response(response: 429, description: 'Rate limit exceeded', content: new OA\JsonContent(ref: '#/components/schemas/Error')),
+        ]
+    )]
     #[Route('/{id}/chapter/roll', name: 'api_game_chapter_roll', methods: ['POST'])]
     public function chapterRoll(string $id, Request $request): JsonResponse
     {
@@ -331,6 +467,20 @@ class GameController extends AbstractController
     // POST /api/game/{id}/epilogue/book — Generate epilogue book
     // -------------------------------------------------------------------------
 
+    #[OA\Post(
+        path: '/api/game/{id}/epilogue/book',
+        operationId: 'generateEpilogueBook',
+        summary: 'Generate a mystery book for the current epilogue action',
+        tags: ['Game'],
+        parameters: [
+            new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid')),
+        ],
+        responses: [
+            new OA\Response(response: 200, description: 'Generated book', content: new OA\JsonContent(ref: '#/components/schemas/Book')),
+            new OA\Response(response: 400, description: 'Business rule violation', content: new OA\JsonContent(ref: '#/components/schemas/Error')),
+            new OA\Response(response: 404, description: 'Game not found', content: new OA\JsonContent(ref: '#/components/schemas/Error')),
+        ]
+    )]
     #[Route('/{id}/epilogue/book', name: 'api_game_epilogue_book', methods: ['POST'])]
     public function epilogueBook(string $id): JsonResponse
     {
@@ -356,6 +506,32 @@ class GameController extends AbstractController
     // POST /api/game/{id}/epilogue/action — Resolve epilogue action
     // -------------------------------------------------------------------------
 
+    #[OA\Post(
+        path: '/api/game/{id}/epilogue/action',
+        operationId: 'resolveEpilogueAction',
+        summary: 'Resolve an epilogue action roll (rate-limited: 30/min)',
+        tags: ['Game'],
+        parameters: [
+            new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid')),
+        ],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ['attribute'],
+                properties: [
+                    new OA\Property(property: 'attribute', type: 'string', enum: ['body', 'mind', 'social']),
+                    new OA\Property(property: 'support_attribute', type: 'string', enum: ['body', 'mind', 'social'], nullable: true),
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(response: 200, description: 'Roll result and updated game state', content: new OA\JsonContent(ref: '#/components/schemas/RollResponse')),
+            new OA\Response(response: 400, description: 'Business rule violation', content: new OA\JsonContent(ref: '#/components/schemas/Error')),
+            new OA\Response(response: 404, description: 'Game not found', content: new OA\JsonContent(ref: '#/components/schemas/Error')),
+            new OA\Response(response: 422, description: 'Invalid attribute', content: new OA\JsonContent(ref: '#/components/schemas/ValidationError')),
+            new OA\Response(response: 429, description: 'Rate limit exceeded', content: new OA\JsonContent(ref: '#/components/schemas/Error')),
+        ]
+    )]
     #[Route('/{id}/epilogue/action', name: 'api_game_epilogue_action', methods: ['POST'])]
     public function epilogueAction(string $id, Request $request): JsonResponse
     {
@@ -415,6 +591,21 @@ class GameController extends AbstractController
     // POST /api/game/{id}/epilogue/final — Resolve final roll
     // -------------------------------------------------------------------------
 
+    #[OA\Post(
+        path: '/api/game/{id}/epilogue/final',
+        operationId: 'resolveEpilogueFinal',
+        summary: 'Resolve the final roll determining the game outcome (rate-limited: 30/min)',
+        tags: ['Game'],
+        parameters: [
+            new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid')),
+        ],
+        responses: [
+            new OA\Response(response: 200, description: 'Final roll result and completed game state', content: new OA\JsonContent(ref: '#/components/schemas/RollResponse')),
+            new OA\Response(response: 400, description: 'Business rule violation', content: new OA\JsonContent(ref: '#/components/schemas/Error')),
+            new OA\Response(response: 404, description: 'Game not found', content: new OA\JsonContent(ref: '#/components/schemas/Error')),
+            new OA\Response(response: 429, description: 'Rate limit exceeded', content: new OA\JsonContent(ref: '#/components/schemas/Error')),
+        ]
+    )]
     #[Route('/{id}/epilogue/final', name: 'api_game_epilogue_final', methods: ['POST'])]
     public function epilogueFinal(string $id, Request $request): JsonResponse
     {
@@ -448,6 +639,32 @@ class GameController extends AbstractController
     // POST /api/game/{id}/journal — Save journal entry
     // -------------------------------------------------------------------------
 
+    #[OA\Post(
+        path: '/api/game/{id}/journal',
+        operationId: 'createJournalEntry',
+        summary: 'Save a journal entry for the current phase',
+        tags: ['Game'],
+        parameters: [
+            new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid')),
+        ],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ['content'],
+                properties: [
+                    new OA\Property(property: 'content', type: 'string'),
+                    new OA\Property(property: 'book_id', type: 'integer', nullable: true),
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(response: 201, description: 'Journal entry created', content: new OA\JsonContent(ref: '#/components/schemas/JournalEntry')),
+            new OA\Response(response: 400, description: 'Business rule violation', content: new OA\JsonContent(ref: '#/components/schemas/Error')),
+            new OA\Response(response: 403, description: 'Book does not belong to this game session', content: new OA\JsonContent(ref: '#/components/schemas/Error')),
+            new OA\Response(response: 404, description: 'Game or book not found', content: new OA\JsonContent(ref: '#/components/schemas/Error')),
+            new OA\Response(response: 422, description: 'Validation failed', content: new OA\JsonContent(ref: '#/components/schemas/ValidationError')),
+        ]
+    )]
     #[Route('/{id}/journal', name: 'api_game_journal_create', methods: ['POST'])]
     public function journalCreate(string $id, Request $request): JsonResponse
     {
@@ -504,6 +721,23 @@ class GameController extends AbstractController
     // GET /api/game/{id}/journal — Get all journal entries
     // -------------------------------------------------------------------------
 
+    #[OA\Get(
+        path: '/api/game/{id}/journal',
+        operationId: 'listJournalEntries',
+        summary: 'Get all journal entries for a game (chronological order)',
+        tags: ['Game'],
+        parameters: [
+            new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid')),
+        ],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Journal entries in chronological order',
+                content: new OA\JsonContent(type: 'array', items: new OA\Items(ref: '#/components/schemas/JournalEntry'))
+            ),
+            new OA\Response(response: 404, description: 'Game not found', content: new OA\JsonContent(ref: '#/components/schemas/Error')),
+        ]
+    )]
     #[Route('/{id}/journal', name: 'api_game_journal_list', methods: ['GET'])]
     public function journalList(string $id): JsonResponse
     {
@@ -590,6 +824,7 @@ class GameController extends AbstractController
             'genre'                 => $game->getGenre(),
             'epoch'                 => $game->getEpoch(),
             'current_phase'         => $game->getCurrentPhase()->value,
+            'game_mode'             => $game->getGameMode(),
             'overcome_score'        => $game->getOvercomeScore(),
             'support_used'          => $game->isSupportUsed(),
             'created_at'            => $game->getCreatedAt()->format('c'),
