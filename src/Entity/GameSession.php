@@ -42,6 +42,9 @@ class GameSession
     #[ORM\Column(type: 'boolean')]
     private bool $support_used = false;
 
+    #[ORM\Column(length: 50)]
+    private string $game_mode = 'aventura_rapida';
+
     #[ORM\Column]
     private DateTimeImmutable $created_at;
 
@@ -161,6 +164,17 @@ class GameSession
     public function setSupportUsed(bool $support_used): self
     {
         $this->support_used = $support_used;
+        return $this;
+    }
+
+    public function getGameMode(): string
+    {
+        return $this->game_mode;
+    }
+
+    public function setGameMode(string $game_mode): self
+    {
+        $this->game_mode = $game_mode;
         return $this;
     }
 

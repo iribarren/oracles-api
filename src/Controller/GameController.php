@@ -49,11 +49,24 @@ class GameController extends AbstractController
     // POST /api/game — Create new game
     // -------------------------------------------------------------------------
 
+    /** Allowed game mode identifiers. Extend this list as new modes are added. */
+    private const array ALLOWED_GAME_MODES = ['aventura_rapida'];
+
     #[Route('', name: 'api_game_create', methods: ['POST'])]
-    public function create(): JsonResponse
+    public function create(Request $request): JsonResponse
     {
+        $data     = $this->decodeJson($request) ?? [];
+        $gameMode = \trim((string) ($data['game_mode'] ?? 'aventura_rapida'));
+
+        if (!\in_array($gameMode, self::ALLOWED_GAME_MODES, true)) {
+            return $this->json(
+                ['error' => 'Validation failed', 'details' => ['game_mode' => 'Unknown game mode.']],
+                422,
+            );
+        }
+
         try {
-            $game = $this->gameEngine->createGame();
+            $game = $this->gameEngine->createGame($gameMode);
         } catch (LogicException | InvalidArgumentException $e) {
             return $this->json(['error' => $e->getMessage()], 400);
         }
@@ -545,6 +558,7 @@ class GameController extends AbstractController
             'genre'                 => $game->getGenre(),
             'epoch'                 => $game->getEpoch(),
             'current_phase'         => $game->getCurrentPhase()->value,
+            'game_mode'             => $game->getGameMode(),
             'overcome_score'        => $game->getOvercomeScore(),
             'support_used'          => $game->isSupportUsed(),
             'created_at'            => $game->getCreatedAt()->format('c'),
