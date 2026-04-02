@@ -1,0 +1,12 @@
+nelmio_api_doc:
+    documentation:
+        info:
+            title: 'La Biblioteca — Oracles API'
+            description: 'REST API for La Biblioteca, a solo TTRPG journaling game.'
+            version: '1.0.0'
+    areas:
+        default:
+            path_patterns:
+                - ^/api(?!/doc)
+    html_config:
+        assets_mode: bundle
