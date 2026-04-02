@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use App\Repository\UserRepository;
-use Doctrine\Common\Collections\ArrayCollection;
-use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
@@ -30,21 +28,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: 'json')]
     private array $roles = ['ROLE_USER'];
 
-    #[ORM\Column(length: 100, nullable: true)]
-    private ?string $displayName = null;
-
     /** The hashed password. */
     #[ORM\Column]
     private string $password;
-
-    /** @var Collection<int, GameSession> */
-    #[ORM\OneToMany(targetEntity: GameSession::class, mappedBy: 'owner', cascade: ['persist'], orphanRemoval: false)]
-    private Collection $gameSessions;
-
-    public function __construct()
-    {
-        $this->gameSessions = new ArrayCollection();
-    }
 
     public function getId(): ?int
     {
@@ -102,34 +88,8 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    public function getDisplayName(): ?string
-    {
-        return $this->displayName;
-    }
-
-    public function setDisplayName(?string $displayName): self
-    {
-        $this->displayName = $displayName;
-        return $this;
-    }
-
     public function eraseCredentials(): void
     {
-    }
-
-    /** @return Collection<int, GameSession> */
-    public function getGameSessions(): Collection
-    {
-        return $this->gameSessions;
-    }
-
-    public function addGameSession(GameSession $gameSession): self
-    {
-        if (!$this->gameSessions->contains($gameSession)) {
-            $this->gameSessions->add($gameSession);
-            $gameSession->setOwner($this);
-        }
-        return $this;
     }
 
     public function __toString(): string

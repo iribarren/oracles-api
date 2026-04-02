@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Security;
 
 use App\Entity\GameSession;
-use App\Entity\User;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\Authorization\Voter\Voter;
 
@@ -23,21 +22,7 @@ class GameSessionVoter extends Voter
 
     protected function voteOnAttribute(string $attribute, mixed $subject, TokenInterface $token): bool
     {
-        /** @var GameSession $subject */
-        $owner = $subject->getOwner();
-
-        // Guest sessions are publicly accessible
-        if ($owner === null) {
-            return true;
-        }
-
-        $currentUser = $token->getUser();
-
-        // No authenticated user, but session has an owner → deny
-        if (!$currentUser instanceof User) {
-            return false;
-        }
-
-        return $owner->getId() === $currentUser->getId();
+        // Sessions are public — no ownership concept
+        return true;
     }
 }

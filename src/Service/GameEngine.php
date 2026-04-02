@@ -9,7 +9,6 @@ use App\Entity\Book;
 use App\Entity\GameSession;
 use App\Entity\JournalEntry;
 use App\Entity\RollResult;
-use App\Entity\User;
 use App\Enum\AttributeType;
 use App\Enum\GamePhase;
 use App\Enum\RollOutcome;
@@ -29,7 +28,7 @@ class GameEngine
     /**
      * Creates a new game session in PROLOGUE phase with three default attributes.
      */
-    public function createGame(string $gameMode = 'aventura_rapida', ?User $owner = null): GameSession
+    public function createGame(string $gameMode = 'aventura_rapida'): GameSession
     {
         $game = new GameSession();
         $game->setGameMode($gameMode);
@@ -39,10 +38,6 @@ class GameEngine
             $attribute->setType($type);
             $attribute->setBaseValue(1);
             $game->addAttribute($attribute);
-        }
-
-        if ($owner !== null) {
-            $game->setOwner($owner);
         }
 
         $this->entityManager->persist($game);
