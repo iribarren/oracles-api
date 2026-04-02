@@ -9,7 +9,6 @@ use App\Entity\Book;
 use App\Entity\GameSession;
 use App\Entity\JournalEntry;
 use App\Entity\RollResult;
-use App\Entity\User;
 use App\Enum\AttributeType;
 use App\Enum\GamePhase;
 use App\Repository\BookRepository;
@@ -75,9 +74,6 @@ class GameController extends AbstractController
     #[Route('', name: 'api_game_create', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
-        /** @var User|null $user */
-        $user = $this->getUser();
-
         $data     = $this->decodeJson($request) ?? [];
         $gameMode = \trim((string) ($data['game_mode'] ?? 'aventura_rapida'));
 
@@ -89,7 +85,7 @@ class GameController extends AbstractController
         }
 
         try {
-            $game = $this->gameEngine->createGame($gameMode, $user);
+            $game = $this->gameEngine->createGame($gameMode);
         } catch (LogicException | InvalidArgumentException $e) {
             return $this->json(['error' => $e->getMessage()], 400);
         }
@@ -461,6 +457,45 @@ class GameController extends AbstractController
             'roll_result' => $this->serializeRollResult($rollResult),
             'game'        => $this->serializeGameState($game),
         ]);
+    }
+
+    // -------------------------------------------------------------------------
+    // POST /api/game/{id}/chapter/advance — Advance to next chapter/epilogue
+    // -------------------------------------------------------------------------
+
+    #[OA\Post(
+        path: '/api/game/{id}/chapter/advance',
+        operationId: 'advanceChapter',
+        summary: 'Advance the game from the current chapter to the next phase',
+        tags: ['Game'],
+        parameters: [
+            new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid')),
+        ],
+        responses: [
+            new OA\Response(response: 200, description: 'Updated game state', content: new OA\JsonContent(ref: '#/components/schemas/GameSession')),
+            new OA\Response(response: 400, description: 'Business rule violation', content: new OA\JsonContent(ref: '#/components/schemas/Error')),
+            new OA\Response(response: 404, description: 'Game not found', content: new OA\JsonContent(ref: '#/components/schemas/Error')),
+        ]
+    )]
+    #[Route('/{id}/chapter/advance', name: 'api_game_chapter_advance', methods: ['POST'])]
+    public function chapterAdvance(string $id): JsonResponse
+    {
+        $game = $this->findGame($id);
+        if ($game === null) {
+            return $this->json(['error' => 'Game session not found'], 404);
+        }
+
+        if (!$this->isGranted(GameSessionVoter::VIEW, $game)) {
+            return $this->json(['error' => 'Access denied'], 403);
+        }
+
+        try {
+            $this->gameEngine->advanceChapter($game);
+        } catch (LogicException | InvalidArgumentException $e) {
+            return $this->json(['error' => $e->getMessage()], 400);
+        }
+
+        return $this->json($this->serializeGameState($game));
     }
 
     // -------------------------------------------------------------------------
