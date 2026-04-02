@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Repository;
 
 use App\Entity\GameSession;
+use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -27,6 +28,19 @@ class GameSessionRepository extends ServiceEntityRepository
     {
         return $this->createQueryBuilder('g')
             ->orderBy('g.created_at', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * @return GameSession[]
+     */
+    public function findByOwnerOrderedByDate(User $owner): array
+    {
+        return $this->createQueryBuilder('g')
+            ->andWhere('g.owner = :owner')
+            ->setParameter('owner', $owner)
+            ->orderBy('g.updated_at', 'DESC')
             ->getQuery()
             ->getResult();
     }

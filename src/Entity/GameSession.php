@@ -67,6 +67,10 @@ class GameSession
     #[ORM\OneToMany(targetEntity: RollResult::class, mappedBy: 'game_session', cascade: ['persist', 'remove'], orphanRemoval: true)]
     private Collection $roll_results;
 
+    #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'gameSessions')]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
+    private ?User $owner = null;
+
     public function __construct()
     {
         $this->id            = Uuid::v4();
@@ -245,6 +249,17 @@ class GameSession
             $this->roll_results->add($rollResult);
             $rollResult->setGameSession($this);
         }
+        return $this;
+    }
+
+    public function getOwner(): ?User
+    {
+        return $this->owner;
+    }
+
+    public function setOwner(?User $owner): self
+    {
+        $this->owner = $owner;
         return $this;
     }
 

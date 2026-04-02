@@ -9,6 +9,7 @@ use App\Entity\GameSession;
 use App\Enum\GamePhase;
 use App\Oracle\BookGenerator;
 use App\Oracle\OracleService;
+use App\Repository\OracleCategoryRepository;
 use PHPUnit\Framework\TestCase;
 
 class BookGeneratorTest extends TestCase
@@ -18,7 +19,7 @@ class BookGeneratorTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->bookGenerator = new BookGenerator(new OracleService());
+        $this->bookGenerator = new BookGenerator(new OracleService($this->createMock(OracleCategoryRepository::class)));
         $this->gameSession   = new GameSession();
     }
 
@@ -80,7 +81,7 @@ class BookGeneratorTest extends TestCase
 
     public function testGenerateBookColorValueComesFromColorTable(): void
     {
-        $oracleService = new OracleService();
+        $oracleService = new OracleService($this->createMock(OracleCategoryRepository::class));
         $validColors   = array_column($oracleService->getColorTable(), 'value');
 
         $book = $this->bookGenerator->generateBook($this->gameSession, GamePhase::CHAPTER_1);
@@ -90,7 +91,7 @@ class BookGeneratorTest extends TestCase
 
     public function testGenerateBookBindingValueComesFromBindingTable(): void
     {
-        $oracleService  = new OracleService();
+        $oracleService  = new OracleService($this->createMock(OracleCategoryRepository::class));
         $validBindings  = array_column($oracleService->getBindingTable(), 'value');
 
         $book = $this->bookGenerator->generateBook($this->gameSession, GamePhase::CHAPTER_1);
@@ -100,7 +101,7 @@ class BookGeneratorTest extends TestCase
 
     public function testGenerateBookSmellValueComesFromSmellTable(): void
     {
-        $oracleService = new OracleService();
+        $oracleService = new OracleService($this->createMock(OracleCategoryRepository::class));
         $validSmells   = array_column($oracleService->getSmellTable(), 'value');
 
         $book = $this->bookGenerator->generateBook($this->gameSession, GamePhase::CHAPTER_1);
@@ -110,7 +111,7 @@ class BookGeneratorTest extends TestCase
 
     public function testGenerateBookInteriorValueComesFromInteriorTable(): void
     {
-        $oracleService  = new OracleService();
+        $oracleService  = new OracleService($this->createMock(OracleCategoryRepository::class));
         $validInteriors = array_column($oracleService->getInteriorTable(), 'value');
 
         $book = $this->bookGenerator->generateBook($this->gameSession, GamePhase::CHAPTER_1);

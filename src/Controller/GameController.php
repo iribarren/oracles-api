@@ -9,10 +9,12 @@ use App\Entity\Book;
 use App\Entity\GameSession;
 use App\Entity\JournalEntry;
 use App\Entity\RollResult;
+use App\Entity\User;
 use App\Enum\AttributeType;
 use App\Enum\GamePhase;
 use App\Repository\BookRepository;
 use App\Repository\GameSessionRepository;
+use App\Security\GameSessionVoter;
 use App\Service\GameEngine;
 use InvalidArgumentException;
 use LogicException;
@@ -73,6 +75,9 @@ class GameController extends AbstractController
     #[Route('', name: 'api_game_create', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
+        /** @var User|null $user */
+        $user = $this->getUser();
+
         $data     = $this->decodeJson($request) ?? [];
         $gameMode = \trim((string) ($data['game_mode'] ?? 'aventura_rapida'));
 
@@ -84,7 +89,7 @@ class GameController extends AbstractController
         }
 
         try {
-            $game = $this->gameEngine->createGame($gameMode);
+            $game = $this->gameEngine->createGame($gameMode, $user);
         } catch (LogicException | InvalidArgumentException $e) {
             return $this->json(['error' => $e->getMessage()], 400);
         }
@@ -153,6 +158,10 @@ class GameController extends AbstractController
         $game = $this->findGame($id);
         if ($game === null) {
             return $this->json(['error' => 'Game session not found'], 404);
+        }
+
+        if (!$this->isGranted(GameSessionVoter::VIEW, $game)) {
+            return $this->json(['error' => 'Access denied'], 403);
         }
 
         // Build a phase -> RollResult index for O(1) lookup per entry
@@ -246,6 +255,10 @@ class GameController extends AbstractController
             return $this->json(['error' => 'Game session not found'], 404);
         }
 
+        if (!$this->isGranted(GameSessionVoter::VIEW, $game)) {
+            return $this->json(['error' => 'Access denied'], 403);
+        }
+
         return $this->json($this->serializeGameState($game));
     }
 
@@ -286,6 +299,10 @@ class GameController extends AbstractController
         $game = $this->findGame($id);
         if ($game === null) {
             return $this->json(['error' => 'Game session not found'], 404);
+        }
+
+        if (!$this->isGranted(GameSessionVoter::VIEW, $game)) {
+            return $this->json(['error' => 'Access denied'], 403);
         }
 
         $data = $this->decodeJson($request);
@@ -360,6 +377,10 @@ class GameController extends AbstractController
             return $this->json(['error' => 'Game session not found'], 404);
         }
 
+        if (!$this->isGranted(GameSessionVoter::VIEW, $game)) {
+            return $this->json(['error' => 'Access denied'], 403);
+        }
+
         try {
             $book = $this->gameEngine->generateChapterBook($game);
         } catch (LogicException | InvalidArgumentException $e) {
@@ -409,6 +430,10 @@ class GameController extends AbstractController
         $game = $this->findGame($id);
         if ($game === null) {
             return $this->json(['error' => 'Game session not found'], 404);
+        }
+
+        if (!$this->isGranted(GameSessionVoter::VIEW, $game)) {
+            return $this->json(['error' => 'Access denied'], 403);
         }
 
         $data = $this->decodeJson($request);
@@ -464,6 +489,10 @@ class GameController extends AbstractController
             return $this->json(['error' => 'Game session not found'], 404);
         }
 
+        if (!$this->isGranted(GameSessionVoter::VIEW, $game)) {
+            return $this->json(['error' => 'Access denied'], 403);
+        }
+
         try {
             $book = $this->gameEngine->generateEpilogueBook($game);
         } catch (LogicException | InvalidArgumentException $e) {
@@ -514,6 +543,10 @@ class GameController extends AbstractController
         $game = $this->findGame($id);
         if ($game === null) {
             return $this->json(['error' => 'Game session not found'], 404);
+        }
+
+        if (!$this->isGranted(GameSessionVoter::VIEW, $game)) {
+            return $this->json(['error' => 'Access denied'], 403);
         }
 
         $data = $this->decodeJson($request);
@@ -586,6 +619,10 @@ class GameController extends AbstractController
             return $this->json(['error' => 'Game session not found'], 404);
         }
 
+        if (!$this->isGranted(GameSessionVoter::VIEW, $game)) {
+            return $this->json(['error' => 'Access denied'], 403);
+        }
+
         try {
             $rollResult = $this->gameEngine->resolveFinalRoll($game);
         } catch (LogicException | InvalidArgumentException $e) {
@@ -634,6 +671,10 @@ class GameController extends AbstractController
         $game = $this->findGame($id);
         if ($game === null) {
             return $this->json(['error' => 'Game session not found'], 404);
+        }
+
+        if (!$this->isGranted(GameSessionVoter::VIEW, $game)) {
+            return $this->json(['error' => 'Access denied'], 403);
         }
 
         $data = $this->decodeJson($request);
@@ -703,6 +744,10 @@ class GameController extends AbstractController
         $game = $this->findGame($id);
         if ($game === null) {
             return $this->json(['error' => 'Game session not found'], 404);
+        }
+
+        if (!$this->isGranted(GameSessionVoter::VIEW, $game)) {
+            return $this->json(['error' => 'Access denied'], 403);
         }
 
         $entries = $game->getJournalEntries()->toArray();

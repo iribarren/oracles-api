@@ -24,12 +24,17 @@ Served at `http://localhost:8080` via Docker. Part of the `biblioteca` workspace
 # From the parent (biblioteca) directory
 docker compose up -d
 
+# Generate JWT keypair (required on every new machine — keys are not committed to git)
+docker compose exec backend-php php bin/console lexik:jwt:generate-keypair
+
 # Run migrations
 docker compose exec backend-php php bin/console doctrine:migrations:migrate --no-interaction
 
 # Seed database (oracle tables + admin user)
 docker compose exec backend-php php bin/console doctrine:fixtures:load --no-interaction
 ```
+
+> **Note:** The JWT keypair (`config/jwt/private.pem` and `public.pem`) is excluded from git for security. It must be generated once per machine/environment.
 
 ### Default Admin Credentials
 
@@ -56,34 +61,51 @@ EasyAdmin dashboard at `/admin` with form-login authentication. Manage:
 
 ## API Endpoints
 
+### Authentication
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `POST` | `/api/auth/register` | Public | Create a player account |
+| `POST` | `/api/auth/login` | Public | Log in and receive JWT + refresh token |
+| `POST` | `/api/auth/refresh` | Public (refresh token) | Obtain a new access token |
+| `GET` | `/api/auth/me` | Bearer | Return current user profile |
+
+### Player
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `GET` | `/api/player/sessions` | Bearer (`ROLE_PLAYER`) | List authenticated player's game sessions |
+
 ### Game Flow
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/api/game` | Create a new game session |
-| `GET` | `/api/game/{id}` | Get full game state |
-| `GET` | `/api/games` | List all game sessions |
-| `POST` | `/api/game/{id}/prologue` | Complete the prologue phase |
-| `POST` | `/api/game/{id}/chapter/book` | Generate a chapter book |
-| `POST` | `/api/game/{id}/chapter/roll` | Roll dice for the current chapter |
-| `POST` | `/api/game/{id}/epilogue/book` | Generate an epilogue book |
-| `POST` | `/api/game/{id}/epilogue/action` | Roll an epilogue action |
-| `POST` | `/api/game/{id}/epilogue/final` | Perform the final roll |
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `POST` | `/api/game` | Optional Bearer | Create a new game session (linked to user if authenticated) |
+| `GET` | `/api/game/{id}` | Optional Bearer | Get full game state |
+| `GET` | `/api/games` | Public | List all game sessions |
+| `POST` | `/api/game/{id}/prologue` | Optional Bearer | Complete the prologue phase |
+| `POST` | `/api/game/{id}/chapter/book` | Optional Bearer | Generate a chapter book |
+| `POST` | `/api/game/{id}/chapter/roll` | Optional Bearer | Roll dice for the current chapter |
+| `POST` | `/api/game/{id}/epilogue/book` | Optional Bearer | Generate an epilogue book |
+| `POST` | `/api/game/{id}/epilogue/action` | Optional Bearer | Roll an epilogue action |
+| `POST` | `/api/game/{id}/epilogue/final` | Optional Bearer | Perform the final roll |
+
+> **Ownership:** Sessions created by an authenticated player are private — only that player can access them. Sessions created without authentication have no owner and are publicly accessible.
 
 ### Journal
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/api/game/{id}/journal` | Save a journal entry |
-| `GET` | `/api/game/{id}/journal` | List journal entries |
-| `GET` | `/api/game/{id}/export` | Export full journal (print-ready) |
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `POST` | `/api/game/{id}/journal` | Optional Bearer | Save a journal entry |
+| `GET` | `/api/game/{id}/journal` | Optional Bearer | List journal entries |
+| `GET` | `/api/game/{id}/export` | Optional Bearer | Export full journal (print-ready) |
 
 ### Oracle
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/api/oracle/tables` | Get all oracle tables |
-| `GET` | `/api/oracle/random-setting` | Random genre + epoch pair |
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `GET` | `/api/oracle/tables` | Public | Get all oracle tables |
+| `GET` | `/api/oracle/random-setting` | Public | Random genre + epoch pair |
 
 ## Architecture
 

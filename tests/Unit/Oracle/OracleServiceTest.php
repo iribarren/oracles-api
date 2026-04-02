@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Unit\Oracle;
 
 use App\Oracle\OracleService;
+use App\Repository\OracleCategoryRepository;
 use PHPUnit\Framework\TestCase;
 
 class OracleServiceTest extends TestCase
@@ -16,7 +17,7 @@ class OracleServiceTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->oracleService = new OracleService();
+        $this->oracleService = new OracleService($this->createMock(OracleCategoryRepository::class));
     }
 
     /** @return array<string, array{array<int, array{value: string, hint: string}>}> */
@@ -120,7 +121,15 @@ class OracleServiceTest extends TestCase
      */
     public static function tableProvider(): array
     {
-        $service = new OracleService();
+        $repository = new class extends OracleCategoryRepository {
+            public function __construct() {}
+
+            public function findOneBy(array $criteria, ?array $orderBy = null): ?object
+            {
+                return null;
+            }
+        };
+        $service = new OracleService($repository);
 
         return [
             'genre'    => ['genre',    $service->getGenreTable()],
