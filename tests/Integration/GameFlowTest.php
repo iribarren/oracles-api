@@ -115,7 +115,7 @@ class GameFlowTest extends WebTestCase
     }
 
     /**
-     * Runs a chapter: generates book then rolls. Returns the roll response.
+     * Runs a chapter: generates book, rolls, and advances. Returns the advance response.
      *
      * @return array<string, mixed>
      */
@@ -126,9 +126,13 @@ class GameFlowTest extends WebTestCase
         $this->assertSame(200, $this->getLastStatusCode());
 
         // Roll for the chapter
-        $rollResponse = $this->postJson("/api/game/{$gameId}/chapter/roll", ['attribute' => $attribute]);
+        $this->postJson("/api/game/{$gameId}/chapter/roll", ['attribute' => $attribute]);
         $this->assertSame(200, $this->getLastStatusCode());
-        return $rollResponse;
+
+        // Advance to the next phase
+        $advanceResponse = $this->postJson("/api/game/{$gameId}/chapter/advance");
+        $this->assertSame(200, $this->getLastStatusCode());
+        return ['game' => $advanceResponse];
     }
 
     /**
@@ -397,14 +401,14 @@ class GameFlowTest extends WebTestCase
         $this->assertArrayHasKey('game',        $data);
     }
 
-    public function testChapterRollAdvancesPhase(): void
+    public function testChapterRollDoesNotAdvancePhase(): void
     {
         $game = $this->createGame();
         $this->completePrologue($game['id']);
         $this->postJson("/api/game/{$game['id']}/chapter/book");
         $data = $this->postJson("/api/game/{$game['id']}/chapter/roll", ['attribute' => 'body']);
 
-        $this->assertSame('chapter_2', $data['game']['current_phase']);
+        $this->assertSame('chapter_1', $data['game']['current_phase']);
     }
 
     public function testChapterRollWithInvalidAttributeReturns422(): void
@@ -422,12 +426,54 @@ class GameFlowTest extends WebTestCase
         $this->completePrologue($game['id']);
 
         // Chapter 1 with 'body'
-        $this->postJson("/api/game/{$game['id']}/chapter/book");
-        $this->postJson("/api/game/{$game['id']}/chapter/roll", ['attribute' => 'body']);
+        $this->runChapter($game['id'], 'body');
 
         // Chapter 2 — try to reuse 'body'
         $this->postJson("/api/game/{$game['id']}/chapter/book");
         $this->postJson("/api/game/{$game['id']}/chapter/roll", ['attribute' => 'body']);
+        $this->assertSame(400, $this->getLastStatusCode());
+    }
+
+    // -------------------------------------------------------------------------
+    // POST /api/game/{id}/chapter/advance
+    // -------------------------------------------------------------------------
+
+    public function testChapterAdvanceReturns200(): void
+    {
+        $game = $this->createGame();
+        $this->completePrologue($game['id']);
+        $this->postJson("/api/game/{$game['id']}/chapter/book");
+        $this->postJson("/api/game/{$game['id']}/chapter/roll", ['attribute' => 'body']);
+
+        $this->postJson("/api/game/{$game['id']}/chapter/advance");
+        $this->assertSame(200, $this->getLastStatusCode());
+    }
+
+    public function testChapterAdvanceMovesToNextPhase(): void
+    {
+        $game = $this->createGame();
+        $this->completePrologue($game['id']);
+        $this->postJson("/api/game/{$game['id']}/chapter/book");
+        $this->postJson("/api/game/{$game['id']}/chapter/roll", ['attribute' => 'body']);
+
+        $data = $this->postJson("/api/game/{$game['id']}/chapter/advance");
+        $this->assertSame('chapter_2', $data['current_phase']);
+    }
+
+    public function testChapterAdvanceWithoutRollReturns400(): void
+    {
+        $game = $this->createGame();
+        $this->completePrologue($game['id']);
+
+        $this->postJson("/api/game/{$game['id']}/chapter/advance");
+        $this->assertSame(400, $this->getLastStatusCode());
+    }
+
+    public function testChapterAdvanceInNonChapterPhaseReturns400(): void
+    {
+        $game = $this->createGame();
+        // Still in prologue
+        $this->postJson("/api/game/{$game['id']}/chapter/advance");
         $this->assertSame(400, $this->getLastStatusCode());
     }
 

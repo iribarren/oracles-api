@@ -121,12 +121,46 @@ class GameEngine
             RollOutcome::MISS     => $attribute->setBackground($attribute->getBackground() - 1),
         };
 
-        $game->setCurrentPhase($game->getCurrentPhase()->next());
         $game->addRollResult($rollResult);
 
         $this->entityManager->flush();
 
         return $rollResult;
+    }
+
+    /**
+     * Advances the game from the current chapter to the next phase.
+     *
+     * Must only be called after the chapter roll has been resolved (a RollResult
+     * for the current phase must exist). This allows the frontend to control
+     * when phase transitions happen (after the post-roll journal is written).
+     */
+    public function advanceChapter(GameSession $game): GameSession
+    {
+        $phase = $game->getCurrentPhase();
+
+        if (!$phase->isChapter()) {
+            throw new LogicException(
+                \sprintf('Cannot advance chapter in phase "%s".', $phase->value)
+            );
+        }
+
+        $hasRoll = false;
+        foreach ($game->getRollResults() as $r) {
+            if ($r->getPhase() === $phase) {
+                $hasRoll = true;
+                break;
+            }
+        }
+
+        if (!$hasRoll) {
+            throw new LogicException('Cannot advance: chapter roll not yet resolved.');
+        }
+
+        $game->setCurrentPhase($phase->next());
+        $this->entityManager->flush();
+
+        return $game;
     }
 
     /**
