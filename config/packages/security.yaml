@@ -6,6 +6,10 @@ security:
             entity:
                 class: App\Entity\User
                 property: email
+    role_hierarchy:
+        ROLE_PLAYER:  ROLE_USER
+        ROLE_CREATOR: ROLE_USER
+        ROLE_ADMIN:   [ROLE_PLAYER, ROLE_CREATOR]
     firewalls:
         dev:
             pattern: ^/(_(profiler|wdt)|css|images|js)/
@@ -39,11 +43,31 @@ security:
         main:
             lazy: true
     access_control:
-        - { path: ^/admin/login, roles: PUBLIC_ACCESS }
-        - { path: ^/admin, roles: ROLE_ADMIN }
-        - { path: ^/api/auth/me, roles: IS_AUTHENTICATED_FULLY }
-        - { path: ^/api/auth, roles: PUBLIC_ACCESS }
-        - { path: ^/api/player, roles: ROLE_PLAYER }
+        # Admin area — session auth
+        - { path: ^/admin/login,    roles: PUBLIC_ACCESS }
+        - { path: ^/admin/api/doc,  roles: ROLE_ADMIN }
+        - { path: ^/admin,          roles: ROLE_ADMIN }
+
+        # API doc — public Swagger UI
+        - { path: ^/api/doc,                    roles: PUBLIC_ACCESS }
+
+        # API — public endpoints (no JWT required)
+        - { path: ^/api/health$,                roles: PUBLIC_ACCESS }
+        - { path: ^/api/test$,                  roles: PUBLIC_ACCESS }
+        - { path: ^/api/auth/login$,            roles: PUBLIC_ACCESS }
+        - { path: ^/api/auth/register$,         roles: PUBLIC_ACCESS }
+        - { path: ^/api/auth/refresh$,          roles: PUBLIC_ACCESS }
+        - { path: ^/api/oracle/tables$,         roles: PUBLIC_ACCESS }
+        - { path: ^/api/oracle/random-setting$, roles: PUBLIC_ACCESS }
+
+        # API — authenticated endpoints
+        - { path: ^/api/auth/me$,   roles: IS_AUTHENTICATED_FULLY }
+        - { path: ^/api/player,     roles: ROLE_PLAYER }
+        - { path: ^/api/game,       roles: ROLE_PLAYER }
+        - { path: ^/api/oracle,     roles: ROLE_CREATOR }
+
+        # Catch-all
+        - { path: ^/api,            roles: IS_AUTHENTICATED_FULLY }
 
 when@test:
     security:
