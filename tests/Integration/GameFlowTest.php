@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration;
 
+use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
+use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 /**
  * Integration tests covering the full game API flow.
@@ -18,6 +21,7 @@ class GameFlowTest extends WebTestCase
 {
     private \Symfony\Bundle\FrameworkBundle\KernelBrowser $browser;
     private EntityManagerInterface $em;
+    private string $token;
 
     protected function setUp(): void
     {
@@ -28,6 +32,18 @@ class GameFlowTest extends WebTestCase
 
         // Clean slate before each test
         $this->purgeDatabase();
+
+        // Create a player user and generate a JWT for authenticated requests
+        $hasher = static::getContainer()->get(UserPasswordHasherInterface::class);
+        $user   = new User();
+        $user->setEmail('player@test.com');
+        $user->setRoles([User::ROLE_PLAYER]);
+        $user->setPassword($hasher->hashPassword($user, 'password'));
+        $this->em->persist($user);
+        $this->em->flush();
+
+        $jwtManager  = static::getContainer()->get(JWTTokenManagerInterface::class);
+        $this->token = $jwtManager->create($user);
     }
 
     protected function tearDown(): void
@@ -49,6 +65,7 @@ class GameFlowTest extends WebTestCase
         $conn->executeStatement('DELETE FROM books');
         $conn->executeStatement('DELETE FROM attributes');
         $conn->executeStatement('DELETE FROM game_sessions');
+        $conn->executeStatement('DELETE FROM users');
         $conn->executeStatement('SET FOREIGN_KEY_CHECKS = 1');
     }
 
@@ -62,7 +79,7 @@ class GameFlowTest extends WebTestCase
             $url,
             [],
             [],
-            ['CONTENT_TYPE' => 'application/json'],
+            ['CONTENT_TYPE' => 'application/json', 'HTTP_AUTHORIZATION' => 'Bearer ' . $this->token],
             json_encode($body, JSON_THROW_ON_ERROR)
         );
 
@@ -75,7 +92,7 @@ class GameFlowTest extends WebTestCase
      */
     private function getJson(string $url): array
     {
-        $this->browser->request('GET', $url);
+        $this->browser->request('GET', $url, [], [], ['HTTP_AUTHORIZATION' => 'Bearer ' . $this->token]);
         $response = $this->browser->getResponse();
         return json_decode($response->getContent(), true, 512, JSON_THROW_ON_ERROR);
     }
