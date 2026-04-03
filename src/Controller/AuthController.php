@@ -16,6 +16,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 #[Route('/api/auth')]
@@ -70,7 +71,7 @@ class AuthController extends AbstractController
 
         $user = new User();
         $user->setEmail($dto->email);
-        $user->setRoles(['ROLE_PLAYER']);
+        $user->setRoles([User::ROLE_PLAYER]);
         $user->setPassword($this->passwordHasher->hashPassword($user, $dto->password));
 
         $this->entityManager->persist($user);
@@ -82,6 +83,7 @@ class AuthController extends AbstractController
     }
 
     #[Route('/me', name: 'api_auth_me', methods: ['GET'])]
+    #[IsGranted('IS_AUTHENTICATED_FULLY')]
     public function me(): JsonResponse
     {
         /** @var User $user */

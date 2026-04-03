@@ -45,7 +45,7 @@ class OpenApiDocTest extends WebTestCase
     }
 
     // -------------------------------------------------------------------------
-    // GET /api/doc/  — SwaggerUI HTML
+    // GET /api/doc/  — SwaggerUI HTML (public area, no auth required)
     // -------------------------------------------------------------------------
 
     public function testSwaggerUiReturns200(): void
@@ -62,7 +62,7 @@ class OpenApiDocTest extends WebTestCase
     }
 
     // -------------------------------------------------------------------------
-    // GET /api/doc.json  — OpenAPI JSON spec
+    // GET /api/doc.json  — OpenAPI JSON spec (public area, no auth required)
     // -------------------------------------------------------------------------
 
     public function testJsonSpecReturns200(): void
@@ -115,63 +115,53 @@ class OpenApiDocTest extends WebTestCase
         $this->assertArrayHasKey('paths', $spec);
     }
 
-    public function testJsonSpecPathsHasAtLeastTenEntries(): void
+    /**
+     * The public spec only exposes public endpoints:
+     * health, test, auth/login, auth/register, auth/refresh,
+     * oracle/tables, oracle/random-setting = 7 paths.
+     */
+    public function testJsonSpecPathsOnlyContainsPublicEndpoints(): void
     {
         $spec = $this->getJson('/api/doc.json');
-        $this->assertGreaterThanOrEqual(10, count($spec['paths']));
+        $paths = array_keys($spec['paths']);
+
+        $allowedPrefixes = ['/api/health', '/api/test', '/api/auth/login', '/api/auth/register', '/api/auth/refresh', '/api/oracle/tables', '/api/oracle/random-setting'];
+
+        foreach ($paths as $path) {
+            $isAllowed = false;
+            foreach ($allowedPrefixes as $prefix) {
+                if (str_starts_with($path, $prefix)) {
+                    $isAllowed = true;
+                    break;
+                }
+            }
+            $this->assertTrue($isAllowed, "Path '{$path}' should not appear in the public API doc");
+        }
+    }
+
+    public function testJsonSpecPublicPathsArePresent(): void
+    {
+        $spec = $this->getJson('/api/doc.json');
+        $paths = array_keys($spec['paths']);
+
+        $this->assertContains('/api/oracle/tables', $paths);
+        $this->assertContains('/api/oracle/random-setting', $paths);
+    }
+
+    public function testJsonSpecDoesNotExposeAuthenticatedEndpoints(): void
+    {
+        $spec = $this->getJson('/api/doc.json');
+        $paths = array_keys($spec['paths']);
+
+        $this->assertNotContains('/api/game', $paths);
+        $this->assertNotContains('/api/games', $paths);
+        $this->assertNotContains('/api/player/sessions', $paths);
+        $this->assertNotContains('/api/auth/me', $paths);
     }
 
     public function testJsonSpecHasComponentsKey(): void
     {
         $spec = $this->getJson('/api/doc.json');
         $this->assertArrayHasKey('components', $spec);
-    }
-
-    public function testJsonSpecComponentsHasSchemasKey(): void
-    {
-        $spec = $this->getJson('/api/doc.json');
-        $this->assertArrayHasKey('schemas', $spec['components']);
-    }
-
-    public function testJsonSpecSchemasContainsGameSession(): void
-    {
-        $spec = $this->getJson('/api/doc.json');
-        $this->assertArrayHasKey('GameSession', $spec['components']['schemas']);
-    }
-
-    public function testJsonSpecSchemasContainsAttribute(): void
-    {
-        $spec = $this->getJson('/api/doc.json');
-        $this->assertArrayHasKey('Attribute', $spec['components']['schemas']);
-    }
-
-    public function testJsonSpecSchemasContainsBook(): void
-    {
-        $spec = $this->getJson('/api/doc.json');
-        $this->assertArrayHasKey('Book', $spec['components']['schemas']);
-    }
-
-    public function testJsonSpecSchemasContainsRollResult(): void
-    {
-        $spec = $this->getJson('/api/doc.json');
-        $this->assertArrayHasKey('RollResult', $spec['components']['schemas']);
-    }
-
-    public function testJsonSpecSchemasContainsJournalEntry(): void
-    {
-        $spec = $this->getJson('/api/doc.json');
-        $this->assertArrayHasKey('JournalEntry', $spec['components']['schemas']);
-    }
-
-    public function testJsonSpecSchemasContainsError(): void
-    {
-        $spec = $this->getJson('/api/doc.json');
-        $this->assertArrayHasKey('Error', $spec['components']['schemas']);
-    }
-
-    public function testJsonSpecSchemasContainsValidationError(): void
-    {
-        $spec = $this->getJson('/api/doc.json');
-        $this->assertArrayHasKey('ValidationError', $spec['components']['schemas']);
     }
 }

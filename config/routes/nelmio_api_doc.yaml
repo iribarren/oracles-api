@@ -8,3 +8,17 @@ nelmio_api_doc_swagger_json:
     defaults:
         _controller: nelmio_api_doc.controller.swagger_json
         area: default
+
+nelmio_api_doc_admin_swagger_ui:
+    resource: '@NelmioApiDocBundle/config/routing/swaggerui.php'
+    prefix: /admin/api/doc
+    name_prefix: admin_
+    defaults:
+        area: admin
+
+nelmio_api_doc_admin_swagger_json:
+    path: /admin/api/doc.json
+    methods: [GET]
+    defaults:
+        _controller: nelmio_api_doc.controller.swagger_json
+        area: admin
