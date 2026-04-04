@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use App\Enum\GamePhase;
+use App\Entity\User;
 use App\Repository\GameSessionRepository;
 use DateTimeImmutable;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -62,6 +63,10 @@ class GameSession
     /** @var Collection<int, JournalEntry> */
     #[ORM\OneToMany(targetEntity: JournalEntry::class, mappedBy: 'game_session', cascade: ['persist', 'remove'], orphanRemoval: true)]
     private Collection $journal_entries;
+
+    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[ORM\JoinColumn(name: 'owner_id', referencedColumnName: 'id', nullable: true, onDelete: 'SET NULL')]
+    private ?User $owner = null;
 
     /** @var Collection<int, RollResult> */
     #[ORM\OneToMany(targetEntity: RollResult::class, mappedBy: 'game_session', cascade: ['persist', 'remove'], orphanRemoval: true)]
@@ -245,6 +250,17 @@ class GameSession
             $this->roll_results->add($rollResult);
             $rollResult->setGameSession($this);
         }
+        return $this;
+    }
+
+    public function getOwner(): ?User
+    {
+        return $this->owner;
+    }
+
+    public function setOwner(?User $owner): self
+    {
+        $this->owner = $owner;
         return $this;
     }
 

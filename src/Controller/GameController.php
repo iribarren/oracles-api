@@ -87,7 +87,9 @@ class GameController extends AbstractController
         }
 
         try {
-            $game = $this->gameEngine->createGame($gameMode);
+            /** @var \App\Entity\User $user */
+            $user = $this->getUser();
+            $game = $this->gameEngine->createGame($gameMode, $user);
         } catch (LogicException | InvalidArgumentException $e) {
             return $this->json(['error' => $e->getMessage()], 400);
         }
