@@ -307,6 +307,28 @@ class GameEngine
         return $entry;
     }
 
+    /**
+     * Sets the support title on the given attribute type and flushes.
+     *
+     * @throws InvalidArgumentException if the attribute type is not found
+     * @throws LogicException           if the attribute has no support points
+     */
+    public function setSupportTitle(GameSession $game, AttributeType $attributeType, string $title): Attribute
+    {
+        $attribute = $this->getAttributeByType($game, $attributeType);
+
+        if ($attribute->getSupport() <= 0) {
+            throw new LogicException(
+                \sprintf('Attribute "%s" has no support points to label.', $attributeType->value)
+            );
+        }
+
+        $attribute->setSupportTitle($title);
+        $this->entityManager->flush();
+
+        return $attribute;
+    }
+
     // -------------------------------------------------------------------------
     // Private helpers
     // -------------------------------------------------------------------------

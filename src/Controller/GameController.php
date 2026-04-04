@@ -501,6 +501,85 @@ class GameController extends AbstractController
     }
 
     // -------------------------------------------------------------------------
+    // POST /api/game/{id}/chapter/support-title — Save support description
+    // -------------------------------------------------------------------------
+
+    #[OA\Post(
+        path: '/api/game/{id}/chapter/support-title',
+        operationId: 'saveChapterSupportTitle',
+        summary: 'Save the support description earned from a chapter weak_hit',
+        tags: ['Game'],
+        parameters: [
+            new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid')),
+        ],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ['attribute', 'support_title'],
+                properties: [
+                    new OA\Property(property: 'attribute', type: 'string', enum: ['body', 'mind', 'social']),
+                    new OA\Property(property: 'support_title', type: 'string', maxLength: 50),
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(response: 200, description: 'Updated game state', content: new OA\JsonContent(ref: '#/components/schemas/GameSession')),
+            new OA\Response(response: 400, description: 'Business rule violation', content: new OA\JsonContent(ref: '#/components/schemas/Error')),
+            new OA\Response(response: 404, description: 'Game not found', content: new OA\JsonContent(ref: '#/components/schemas/Error')),
+            new OA\Response(response: 422, description: 'Validation failed', content: new OA\JsonContent(ref: '#/components/schemas/Error')),
+        ]
+    )]
+    #[Route('/{id}/chapter/support-title', name: 'api_game_chapter_support_title', methods: ['POST'])]
+    public function chapterSupportTitle(string $id, Request $request): JsonResponse
+    {
+        $game = $this->findGame($id);
+        if ($game === null) {
+            return $this->json(['error' => 'Game session not found'], 404);
+        }
+
+        if (!$this->isGranted(GameSessionVoter::VIEW, $game)) {
+            return $this->json(['error' => 'Access denied'], 403);
+        }
+
+        $data = $this->decodeJson($request);
+        if ($data === null) {
+            return $this->json(['error' => 'Invalid request body'], 400);
+        }
+
+        $attributeValue = \trim((string) ($data['attribute'] ?? ''));
+        $attributeType  = AttributeType::tryFrom($attributeValue);
+        if ($attributeType === null) {
+            return $this->json(
+                ['error' => 'Validation failed', 'details' => ['attribute' => 'Must be one of: body, mind, social.']],
+                422
+            );
+        }
+
+        $rawTitle    = (string) ($data['support_title'] ?? '');
+        $supportTitle = \strip_tags(\trim($rawTitle));
+        if ($supportTitle === '') {
+            return $this->json(
+                ['error' => 'Validation failed', 'details' => ['support_title' => 'Must not be empty.']],
+                422
+            );
+        }
+        if (\mb_strlen($supportTitle) > 50) {
+            return $this->json(
+                ['error' => 'Validation failed', 'details' => ['support_title' => 'Must be 50 characters or fewer.']],
+                422
+            );
+        }
+
+        try {
+            $this->gameEngine->setSupportTitle($game, $attributeType, $supportTitle);
+        } catch (LogicException | InvalidArgumentException $e) {
+            return $this->json(['error' => $e->getMessage()], 400);
+        }
+
+        return $this->json($this->serializeGameState($game));
+    }
+
+    // -------------------------------------------------------------------------
     // POST /api/game/{id}/epilogue/book — Generate epilogue book
     // -------------------------------------------------------------------------
 
