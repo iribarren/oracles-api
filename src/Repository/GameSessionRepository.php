@@ -33,6 +33,43 @@ class GameSessionRepository extends ServiceEntityRepository
     }
 
     /**
+     * Loads a GameSession with all four collections eagerly hydrated (2 queries
+     * instead of the default ~6 lazy-load queries triggered by serializeGameState).
+     *
+     * Doctrine does not allow more than one collection JOIN FETCH per query, so
+     * we run two queries and let the identity map merge them into a single entity.
+     */
+    public function findWithEagerCollections(string $id): ?GameSession
+    {
+        /** @var GameSession|null $game */
+        $game = $this->createQueryBuilder('g')
+            ->addSelect('a, b')
+            ->leftJoin('g.attributes', 'a')
+            ->leftJoin('g.books', 'b')
+            ->where('g.id = :id')
+            ->setParameter('id', $id, 'uuid')
+            ->getQuery()
+            ->getOneOrNullResult();
+
+        if ($game === null) {
+            return null;
+        }
+
+        // Second query initialises journal_entries and roll_results via the
+        // identity map, so the same $game instance is returned fully hydrated.
+        $this->createQueryBuilder('g')
+            ->addSelect('j, r')
+            ->leftJoin('g.journal_entries', 'j')
+            ->leftJoin('g.roll_results', 'r')
+            ->where('g.id = :id')
+            ->setParameter('id', $id, 'uuid')
+            ->getQuery()
+            ->getResult();
+
+        return $game;
+    }
+
+    /**
      * @return GameSession[]
      */
     public function findByOwnerOrderedByDate(User $owner): array
