@@ -883,8 +883,7 @@ class GameController extends AbstractController
 
     private function findGame(string $id): ?GameSession
     {
-        // UUIDs stored as binary; find() will accept the string representation
-        return $this->gameSessionRepository->find($id);
+        return $this->gameSessionRepository->findWithEagerCollections($id);
     }
 
     /**
