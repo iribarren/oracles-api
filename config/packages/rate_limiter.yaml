@@ -4,10 +4,3 @@ framework:
             policy: 'fixed_window'
             limit: 30
             interval: '1 minute'
-
-        # Login throttling: max 5 attempts per minute per IP address.
-        # Applied automatically by the login_throttling firewall option (security.yaml).
-        login_attempt:
-            policy: 'fixed_window'
-            limit: 5
-            interval: '1 minute'
