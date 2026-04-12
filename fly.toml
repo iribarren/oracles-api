@@ -1,0 +1,38 @@
+# Fly.io configuration for the Oracles API (Symfony backend).
+# Deploy with: fly deploy -a biblioteca-api
+#
+# Required secrets (set once with `fly secrets set -a biblioteca-api`):
+#   APP_SECRET               — php -r "echo bin2hex(random_bytes(16));"
+#   JWT_PASSPHRASE           — strong passphrase used when generating the keypair
+#   JWT_PRIVATE_KEY_BASE64   — base64 -w0 config/jwt/private.pem
+#   JWT_PUBLIC_KEY_BASE64    — base64 -w0 config/jwt/public.pem
+#   DATABASE_URL             — mysql://biblioteca_user:<pass>@biblioteca-db.internal:3306/biblioteca?serverVersion=8.0&charset=utf8mb4
+#   CORS_ALLOW_ORIGIN        — https://<your-frontend-domain>
+
+app    = 'biblioteca-api'
+primary_region = 'mad'
+
+[build]
+  dockerfile = 'Dockerfile.fly'
+
+[env]
+  APP_ENV = "prod"
+
+[http_service]
+  internal_port        = 80
+  force_https          = true
+  auto_stop_machines   = false
+  auto_start_machines  = true
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    grace_period = "15s"
+    interval     = "30s"
+    method       = "GET"
+    path         = "/api/health"
+    timeout      = "5s"
+
+[[vm]]
+  memory   = '512mb'
+  cpu_kind = 'shared'
+  cpus     = 1
