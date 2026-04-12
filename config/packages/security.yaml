@@ -28,7 +28,6 @@ security:
             login_throttling:
                 max_attempts: 5
                 interval: '1 minute'
-                limiter: login_attempt
             refresh_jwt:
                 check_path: /api/auth/refresh
             jwt: ~
