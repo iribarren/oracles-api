@@ -31,7 +31,8 @@ Symfony 7.2 REST API for TTRPG games. Currently powers "The Library" (La Bibliot
 
 ## Security
 - Admin panel: form-login authentication, `ROLE_ADMIN` required
-- API endpoints (`/api/*`): public, no authentication (game is single-player)
+- API game endpoints (`/api/game/*`): public (no role required); `GameSessionVoter` enforces ownership — ownerless sessions are public, owned sessions are restricted to their owner (403 otherwise)
+- API player/auth endpoints: JWT stateless auth via Lexik bundle; `ROLE_PLAYER` for `/api/player`, `IS_AUTHENTICATED_FULLY` for `/api/auth/me`
 - CORS configured for frontend origin
 
 ## Key Conventions
@@ -46,9 +47,35 @@ Symfony 7.2 REST API for TTRPG games. Currently powers "The Library" (La Bibliot
 - Fixtures in `src/DataFixtures/` — seeds oracle data + admin user
 - UUID for GameSession PK, auto-increment integers for other entities
 
-## Unit tests.
-- Every new development must maintain the code coverage, with meaningful tests
-- Before commiting a new feature, the test must run currectly
+## Behaviour specs (Behat) — source of truth
+
+The project uses Spec-Driven Development. The `features/` directory contains executable Gherkin specs that ARE the contract for every business rule. Read them before changing any logic.
+
+**62 scenarios across 9 feature files — all must stay green.**
+
+| Feature file | What it pins |
+| --- | --- |
+| `features/prologue.feature` | Initial state, character creation, phase transition to chapter_1 |
+| `features/chapters.feature` | hit/weak_hit/miss effects on background/support, modifier math, phase transitions, attribute reuse ban, support title |
+| `features/epilogue.feature` | overcome_score accumulation, single-use support bonus, automatic advance, final roll outcomes, full playthrough |
+| `features/authentication.feature` | Registration (validation, anti-enumeration), login, throttling, profile, token refresh |
+| `features/game-lifecycle.feature` | Anonymous vs owned sessions, GameSessionVoter (403), player session listing |
+| `features/oracles.feature` | Fallback to constants (empty DB) and DB-first read when seeded |
+| `features/journal.feature` | Entry saving, HTML sanitization, book linking, chronological order, ownership |
+| `features/export.feature` | Full document structure, ownership |
+| `features/health.feature` | /api/health (DB up), /api/test (connectivity) |
+
+```bash
+docker compose exec backend-php vendor/bin/behat          # run all specs
+docker compose exec backend-php vendor/bin/behat --dry-run # verify wiring
+```
+
+**Mandatory:** run the full suite before committing. A red scenario is a broken contract.
+
+## Unit and integration tests (PHPUnit)
+
+- Every new development must maintain code coverage with meaningful tests
+- Before committing a new feature, all tests must pass: `docker compose exec backend-php vendor/bin/phpunit`
 
 ## Docker
 - `Dockerfile` — development (PHP 8.3-FPM + Xdebug)

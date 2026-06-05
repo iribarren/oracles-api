@@ -5,3 +5,9 @@ _security_logout:
 api_login_check:
     path: /api/auth/login
     methods: [POST]
+
+# Handled by the firewall's refresh_jwt authenticator (gesdinet bundle).
+# Like api_login_check, the route only needs a path — no controller.
+api_auth_refresh:
+    path: /api/auth/refresh
+    methods: [POST]

@@ -5,6 +5,15 @@ services:
 
     App\Tests\Behat\:
         resource: '../tests/Behat/*'
+        # Step traits are flattened into FeatureContext, not services themselves.
+        exclude: '../tests/Behat/Steps/*'
+
+    # Inject the rate limiter cache pool so the context can clear login-throttling
+    # state between scenarios (it persists in the filesystem cache otherwise).
+    App\Tests\Behat\FeatureContext:
+        public: true
+        arguments:
+            $rateLimiterCache: '@cache.rate_limiter'
 
     # Deterministic dice for BDD scenarios: override the production randomness
     # source with a queue the steps control. Public + shared so the very same
