@@ -7,6 +7,7 @@ namespace App\Controller;
 use App\Entity\GameSession;
 use App\Entity\User;
 use App\Repository\GameSessionRepository;
+use OpenApi\Attributes as OA;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Attribute\Route;
@@ -20,6 +21,22 @@ class PlayerController extends AbstractController
         private readonly GameSessionRepository $gameSessionRepository,
     ) {}
 
+    #[OA\Get(
+        path: '/api/player/sessions',
+        operationId: 'playerSessions',
+        summary: 'List the authenticated player\'s game sessions',
+        tags: ['Player'],
+        security: [['Bearer' => []]],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Array of game session summaries ordered by most recent',
+                content: new OA\JsonContent(type: 'array', items: new OA\Items(ref: '#/components/schemas/GameSummary'))
+            ),
+            new OA\Response(response: 401, description: 'Unauthorized — JWT token missing or expired'),
+            new OA\Response(response: 403, description: 'Forbidden — ROLE_PLAYER required'),
+        ]
+    )]
     #[Route('/sessions', name: 'api_player_sessions', methods: ['GET'])]
     public function sessions(): JsonResponse
     {

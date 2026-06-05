@@ -59,53 +59,18 @@ EasyAdmin dashboard at `/admin` with form-login authentication. Manage:
 - **Oracle Options** — values and hints per category, activation toggle
 - **Game Sessions** — read-only view and deletion
 
-## API Endpoints
+## API Reference
 
-### Authentication
+Swagger is the single source of truth for endpoint signatures, request/response schemas, and auth requirements.
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| `POST` | `/api/auth/register` | Public | Create a player account |
-| `POST` | `/api/auth/login` | Public | Log in and receive JWT + refresh token |
-| `POST` | `/api/auth/refresh` | Public (refresh token) | Obtain a new access token |
-| `GET` | `/api/auth/me` | Bearer | Return current user profile |
+| Swagger UI | URL | Access |
+|-----------|-----|--------|
+| Public (Auth + Oracle + Health) | `http://localhost:8080/api/doc` | Public |
+| Full (all endpoints) | `http://localhost:8080/admin/api/doc` | `ROLE_ADMIN` session required |
+| Raw OpenAPI JSON (public) | `http://localhost:8080/api/doc.json` | Public |
+| Raw OpenAPI JSON (full) | `http://localhost:8080/admin/api/doc.json` | `ROLE_ADMIN` session required |
 
-### Player
-
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| `GET` | `/api/player/sessions` | Bearer (`ROLE_PLAYER`) | List authenticated player's game sessions |
-
-### Game Flow
-
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| `POST` | `/api/game` | Optional Bearer | Create a new game session (linked to user if authenticated) |
-| `GET` | `/api/game/{id}` | Optional Bearer | Get full game state |
-| `GET` | `/api/games` | Public | List all game sessions |
-| `POST` | `/api/game/{id}/prologue` | Optional Bearer | Complete the prologue phase |
-| `POST` | `/api/game/{id}/chapter/book` | Optional Bearer | Generate a chapter book |
-| `POST` | `/api/game/{id}/chapter/roll` | Optional Bearer | Roll dice for the current chapter |
-| `POST` | `/api/game/{id}/epilogue/book` | Optional Bearer | Generate an epilogue book |
-| `POST` | `/api/game/{id}/epilogue/action` | Optional Bearer | Roll an epilogue action |
-| `POST` | `/api/game/{id}/epilogue/final` | Optional Bearer | Perform the final roll |
-
-> **Ownership:** Sessions created by an authenticated player are private — only that player can access them. Sessions created without authentication have no owner and are publicly accessible.
-
-### Journal
-
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| `POST` | `/api/game/{id}/journal` | Optional Bearer | Save a journal entry |
-| `GET` | `/api/game/{id}/journal` | Optional Bearer | List journal entries |
-| `GET` | `/api/game/{id}/export` | Optional Bearer | Export full journal (print-ready) |
-
-### Oracle
-
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| `GET` | `/api/oracle/tables` | Public | Get all oracle tables |
-| `GET` | `/api/oracle/random-setting` | Public | Random genre + epoch pair |
+> In production replace `http://localhost:8080` with `https://biblioteca-api.fly.dev`.
 
 ## Architecture
 
