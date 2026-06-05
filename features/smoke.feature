@@ -6,6 +6,8 @@ Feature: API is reachable
     And the response should be valid JSON
     And the JSON response should have key "status"
 
-  Scenario: Authenticated endpoint requires JWT
+  # Game endpoints are public (the GameSessionVoter enforces ownership), so a
+  # missing session is a plain 404 rather than an auth challenge.
+  Scenario: A missing game session is not found
     When I send a GET request to "/api/game/00000000-0000-0000-0000-000000000000"
-    Then the response status code should be 401
+    Then the response status code should be 404

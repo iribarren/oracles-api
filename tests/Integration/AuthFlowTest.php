@@ -256,14 +256,11 @@ class AuthFlowTest extends WebTestCase
 
     public function testMeReturns401WhenNotAuthenticated(): void
     {
-        // Note: /api/auth is marked PUBLIC_ACCESS in security.yaml, so the JWT firewall
-        // does not block this request. The controller calls $this->getUser() which returns
-        // null, resulting in a 500 error. The expected behavior would be 401, but the
-        // current implementation does not guard unauthenticated access to this endpoint.
+        // The access_control rule `^/api/auth/me$ → IS_AUTHENTICATED_FULLY` makes the
+        // JWT firewall reject the unauthenticated request through its entry point.
         $this->browser->request('GET', '/api/auth/me');
 
-        $statusCode = $this->getLastStatusCode();
-        $this->assertNotSame(200, $statusCode, 'Unauthenticated /api/auth/me must not return 200.');
+        $this->assertSame(401, $this->getLastStatusCode());
     }
 
     // -------------------------------------------------------------------------
@@ -272,11 +269,8 @@ class AuthFlowTest extends WebTestCase
 
     public function testRefreshTokenReturnsNewToken(): void
     {
-        // The gesdinet JWT refresh bundle is installed and login returns a refresh_token,
-        // but the bundle's route (/api/auth/refresh) is not yet imported in routes.yaml.
-        // This test verifies the login flow produces a refresh_token and asserts the
-        // refresh endpoint returns a non-404 once the route is wired up.
-        // Currently the route returns 404 — this is a known wiring gap, not a bundle bug.
+        // The gesdinet refresh route is wired in config/routes/security.yaml and handled
+        // by the firewall's refresh_jwt authenticator. A valid refresh_token yields a new JWT.
         $this->createUser('refresh@test.com', 'password123');
         $loginData = $this->login('refresh@test.com', 'password123');
 
@@ -292,15 +286,14 @@ class AuthFlowTest extends WebTestCase
             \json_encode(['refresh_token' => $loginData['refresh_token']], \JSON_THROW_ON_ERROR)
         );
 
-        // Route is not yet registered — returns 404. Once the gesdinet route is imported
-        // in config/routes.yaml, this assertion should be changed to assertSame(200, ...).
-        $this->assertSame(404, $this->getLastStatusCode());
+        $this->assertSame(200, $this->getLastStatusCode());
+        $data = \json_decode($this->browser->getResponse()->getContent(), true, 512, \JSON_THROW_ON_ERROR);
+        $this->assertArrayHasKey('token', $data, 'Refresh must return a new JWT token.');
+        $this->assertNotEmpty($data['token']);
     }
 
     public function testRefreshWithInvalidTokenReturns401(): void
     {
-        // Same as above: the /api/auth/refresh route is not yet registered (returns 404).
-        // Once the route is wired, an invalid token should return 401.
         $this->browser->request(
             'POST',
             '/api/auth/refresh',
@@ -310,7 +303,7 @@ class AuthFlowTest extends WebTestCase
             \json_encode(['refresh_token' => 'this-is-not-a-valid-refresh-token'], \JSON_THROW_ON_ERROR)
         );
 
-        $this->assertSame(404, $this->getLastStatusCode());
+        $this->assertSame(401, $this->getLastStatusCode());
     }
 
     // -------------------------------------------------------------------------
@@ -356,9 +349,7 @@ class AuthFlowTest extends WebTestCase
         );
         $this->assertSame(200, $this->getLastStatusCode());
 
-        // Step 6: Attempt to refresh the token.
-        // The /api/auth/refresh route is not yet registered (gesdinet route not imported),
-        // so this returns 404. Once wired, assert 200 and use the new token in step 7.
+        // Step 6: Refresh the token — the refresh_token from login yields a fresh JWT.
         $this->browser->request(
             'POST',
             '/api/auth/refresh',
@@ -367,15 +358,17 @@ class AuthFlowTest extends WebTestCase
             ['CONTENT_TYPE' => 'application/json'],
             \json_encode(['refresh_token' => $refreshToken], \JSON_THROW_ON_ERROR)
         );
-        $this->assertSame(404, $this->getLastStatusCode());
+        $this->assertSame(200, $this->getLastStatusCode());
+        $refreshed = \json_decode($this->browser->getResponse()->getContent(), true, 512, \JSON_THROW_ON_ERROR);
+        $this->assertArrayHasKey('token', $refreshed);
 
-        // Step 7: The original token is still valid — use it to access the game.
+        // Step 7: The refreshed token is valid — use it to access the game.
         $this->browser->request(
             'GET',
             '/api/game/' . $gameId,
             [],
             [],
-            ['HTTP_AUTHORIZATION' => 'Bearer ' . $token]
+            ['HTTP_AUTHORIZATION' => 'Bearer ' . $refreshed['token']]
         );
         $this->assertSame(200, $this->getLastStatusCode());
     }
