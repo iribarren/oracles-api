@@ -6,16 +6,21 @@ namespace App\Service;
 
 use App\Entity\RollResult;
 use App\Enum\RollOutcome;
+use App\Service\Random\RandomGeneratorInterface;
 
 class DiceService
 {
+    public function __construct(
+        private readonly RandomGeneratorInterface $random,
+    ) {}
+
     /**
      * Rolls a die with the given number of sides.
      * Returns an integer in [1, $sides].
      */
     public function rollDie(int $sides): int
     {
-        return random_int(1, $sides);
+        return $this->random->int(1, $sides);
     }
 
     /**

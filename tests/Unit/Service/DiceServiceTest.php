@@ -6,6 +6,7 @@ namespace App\Tests\Unit\Service;
 
 use App\Enum\RollOutcome;
 use App\Service\DiceService;
+use App\Service\Random\SystemRandomGenerator;
 use PHPUnit\Framework\TestCase;
 
 class DiceServiceTest extends TestCase
@@ -14,7 +15,7 @@ class DiceServiceTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->diceService = new DiceService();
+        $this->diceService = new DiceService(new SystemRandomGenerator());
     }
 
     public function testRollDieSixAlwaysReturnsValueInRange(): void

@@ -17,6 +17,7 @@ security:
         api:
             pattern: ^/api
             stateless: true
+            lazy: true
             provider: app_user_provider
             entry_point: jwt
             json_login:
@@ -66,8 +67,12 @@ security:
         # API — authenticated endpoints
         - { path: ^/api/auth/me$,   roles: IS_AUTHENTICATED_FULLY }
         - { path: ^/api/player,     roles: ROLE_PLAYER }
-        - { path: ^/api/game,       roles: ROLE_PLAYER }
         - { path: ^/api/oracle,     roles: ROLE_CREATOR }
+
+        # Game endpoints are public — the GameSessionVoter enforces ownership.
+        # Anonymous users can create and play ownerless sessions; owned sessions
+        # are restricted to their owner by the voter (returns 403 otherwise).
+        - { path: ^/api/game,       roles: PUBLIC_ACCESS }
 
         # Catch-all
         - { path: ^/api,            roles: IS_AUTHENTICATED_FULLY }

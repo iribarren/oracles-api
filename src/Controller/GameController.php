@@ -26,7 +26,6 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/api/game')]
-#[IsGranted('ROLE_PLAYER')]
 class GameController extends AbstractController
 {
     /** Maps GamePhase values to their Spanish display labels. */
@@ -87,7 +86,7 @@ class GameController extends AbstractController
         }
 
         try {
-            /** @var \App\Entity\User $user */
+            /** @var \App\Entity\User|null $user */
             $user = $this->getUser();
             $game = $this->gameEngine->createGame($gameMode, $user);
         } catch (LogicException | InvalidArgumentException $e) {

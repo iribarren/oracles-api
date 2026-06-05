@@ -5,3 +5,13 @@ services:
 
     App\Tests\Behat\:
         resource: '../tests/Behat/*'
+
+    # Deterministic dice for BDD scenarios: override the production randomness
+    # source with a queue the steps control. Public + shared so the very same
+    # instance is injected into DiceService and into the FeatureContext.
+    App\Tests\Behat\Dice\QueuedRandomGenerator:
+        public: true
+
+    App\Service\Random\RandomGeneratorInterface:
+        alias: App\Tests\Behat\Dice\QueuedRandomGenerator
+        public: true
