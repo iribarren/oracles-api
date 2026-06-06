@@ -4,14 +4,88 @@ nelmio_api_doc:
             title: 'La Biblioteca — Oracles API'
             description: 'REST API for La Biblioteca, a solo TTRPG journaling game.'
             version: '1.0.0'
+        # Static definitions for firewall-handled routes (json_login / refresh_jwt)
+        # that have no controller and cannot carry #[OA\...] attributes.
+        paths:
+            /api/auth/login:
+                post:
+                    tags: ['Auth']
+                    operationId: authLogin
+                    summary: 'Log in and receive JWT + refresh token'
+                    requestBody:
+                        required: true
+                        content:
+                            application/json:
+                                schema:
+                                    type: object
+                                    required: [email, password]
+                                    properties:
+                                        email:
+                                            type: string
+                                            format: email
+                                            example: player@example.com
+                                        password:
+                                            type: string
+                                            example: 'Secret123!'
+                    responses:
+                        '200':
+                            description: 'Login successful'
+                            content:
+                                application/json:
+                                    schema:
+                                        type: object
+                                        properties:
+                                            token:
+                                                type: string
+                                                description: 'JWT access token (short-lived)'
+                                            refresh_token:
+                                                type: string
+                                                description: 'Refresh token (long-lived, store in localStorage)'
+                        '401':
+                            description: 'Invalid credentials'
+            /api/auth/refresh:
+                post:
+                    tags: ['Auth']
+                    operationId: authRefresh
+                    summary: 'Exchange a refresh token for a new JWT access token'
+                    requestBody:
+                        required: true
+                        content:
+                            application/json:
+                                schema:
+                                    type: object
+                                    required: [refresh_token]
+                                    properties:
+                                        refresh_token:
+                                            type: string
+                                            description: 'Refresh token obtained at login'
+                    responses:
+                        '200':
+                            description: 'New access token issued'
+                            content:
+                                application/json:
+                                    schema:
+                                        type: object
+                                        properties:
+                                            token:
+                                                type: string
+                                            refresh_token:
+                                                type: string
+                        '401':
+                            description: 'Refresh token invalid or expired'
     areas:
         default:
+            # Public Swagger UI at /api/doc — covers Auth + Oracle + Health.
+            # Game and Player endpoints (/api/game/*, /api/player/*) are intentionally
+            # excluded here; they are fully documented in the admin area (/admin/api/doc).
             path_patterns:
                 - ^/api/health$
                 - ^/api/test$
                 - ^/api/auth/(login|register|refresh)$
                 - ^/api/oracle/(tables|random-setting)$
         admin:
+            # Admin Swagger UI at /admin/api/doc — full coverage including game/player endpoints.
+            # Requires ROLE_ADMIN session.
             path_patterns:
                 - ^/api(?!/doc)
     html_config:

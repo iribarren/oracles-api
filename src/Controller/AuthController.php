@@ -9,6 +9,7 @@ use App\Entity\User;
 use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
+use OpenApi\Attributes as OA;
 use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -32,6 +33,34 @@ class AuthController extends AbstractController
     ) {
     }
 
+    #[OA\Post(
+        path: '/api/auth/register',
+        operationId: 'authRegister',
+        summary: 'Register a new player account',
+        tags: ['Auth'],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(properties: [
+                new OA\Property(property: 'email', type: 'string', format: 'email', example: 'player@example.com'),
+                new OA\Property(property: 'password', type: 'string', minLength: 6, example: 'Secret123!'),
+                new OA\Property(property: 'passwordConfirmation', type: 'string', example: 'Secret123!'),
+            ])
+        ),
+        responses: [
+            new OA\Response(
+                response: 201,
+                description: 'Registration successful — returns JWT token',
+                content: new OA\JsonContent(properties: [
+                    new OA\Property(property: 'token', type: 'string', description: 'JWT access token'),
+                ])
+            ),
+            new OA\Response(
+                response: 422,
+                description: 'Validation failed',
+                content: new OA\JsonContent(ref: '#/components/schemas/ValidationError')
+            ),
+        ]
+    )]
     #[Route('/register', name: 'api_auth_register', methods: ['POST'])]
     public function register(Request $request): JsonResponse
     {
