@@ -4,12 +4,156 @@ nelmio_api_doc:
             title: 'La Biblioteca — Oracles API'
             description: 'REST API for La Biblioteca, a solo TTRPG journaling game.'
             version: '1.0.0'
+
+        components:
+            schemas:
+                Attribute:
+                    description: 'A character attribute (Body, Mind, or Social) with its values.'
+                    properties:
+                        id: { type: integer }
+                        type: { type: string, enum: [body, mind, social] }
+                        base_value: { type: integer }
+                        background: { type: integer }
+                        background_title: { type: string, nullable: true }
+                        support: { type: integer }
+                        support_title: { type: string, nullable: true }
+
+                Book:
+                    description: 'A mystery book generated for a chapter or epilogue.'
+                    properties:
+                        id: { type: integer }
+                        phase: { type: string, enum: [prologue, chapter_1, chapter_2, chapter_3, epilogue_action_1, epilogue_action_2, epilogue_action_3, epilogue_final, completed] }
+                        color: { type: string }
+                        color_hint: { type: string }
+                        binding: { type: string }
+                        binding_hint: { type: string }
+                        smell: { type: string }
+                        smell_hint: { type: string }
+                        interior: { type: string }
+
+                JournalEntry:
+                    description: 'A narrative entry written by the player.'
+                    properties:
+                        id: { type: integer }
+                        phase: { type: string, enum: [prologue, chapter_1, chapter_2, chapter_3, epilogue_action_1, epilogue_action_2, epilogue_action_3, epilogue_final, completed] }
+                        content: { type: string }
+                        book_id: { type: integer, nullable: true }
+                        created_at: { type: string, format: date-time }
+
+                RollResult:
+                    description: 'The result of a dice roll (1d6 + modifier vs 2d10).'
+                    properties:
+                        id: { type: integer }
+                        phase: { type: string, enum: [prologue, chapter_1, chapter_2, chapter_3, epilogue_action_1, epilogue_action_2, epilogue_action_3, epilogue_final, completed] }
+                        action_number: { type: integer, nullable: true }
+                        action_die: { type: integer, minimum: 1, maximum: 6 }
+                        challenge_die_1: { type: integer, minimum: 1, maximum: 10 }
+                        challenge_die_2: { type: integer, minimum: 1, maximum: 10 }
+                        modifier: { type: integer }
+                        action_score: { type: integer }
+                        outcome: { type: string, enum: [hit, weak_hit, miss] }
+                        attribute_type: { type: string, enum: [body, mind, social], nullable: true }
+
+                GameSession:
+                    description: 'Full game state including all nested data.'
+                    properties:
+                        id: { type: string, format: uuid }
+                        character_name: { type: string, nullable: true }
+                        character_description: { type: string, nullable: true }
+                        genre: { type: string, nullable: true }
+                        epoch: { type: string, nullable: true }
+                        current_phase: { type: string, enum: [prologue, chapter_1, chapter_2, chapter_3, epilogue_action_1, epilogue_action_2, epilogue_action_3, epilogue_final, completed] }
+                        game_mode: { type: string, example: aventura_rapida }
+                        overcome_score: { type: integer }
+                        support_used: { type: boolean }
+                        created_at: { type: string, format: date-time }
+                        updated_at: { type: string, format: date-time }
+                        attributes:
+                            type: array
+                            items: { $ref: '#/components/schemas/Attribute' }
+                        books:
+                            type: array
+                            items: { $ref: '#/components/schemas/Book' }
+                        journal_entries:
+                            type: array
+                            items: { $ref: '#/components/schemas/JournalEntry' }
+                        roll_results:
+                            type: array
+                            items: { $ref: '#/components/schemas/RollResult' }
+
+                GameSummary:
+                    description: 'Abbreviated game session for list views.'
+                    properties:
+                        id: { type: string, format: uuid }
+                        character_name: { type: string, nullable: true }
+                        genre: { type: string, nullable: true }
+                        epoch: { type: string, nullable: true }
+                        current_phase: { type: string, enum: [prologue, chapter_1, chapter_2, chapter_3, epilogue_action_1, epilogue_action_2, epilogue_action_3, epilogue_final, completed] }
+                        phase_label: { type: string, example: 'Capítulo I' }
+                        created_at: { type: string, format: date-time }
+                        updated_at: { type: string, format: date-time }
+
+                RollResponse:
+                    description: 'Response containing a roll result and the updated game state.'
+                    properties:
+                        roll_result: { $ref: '#/components/schemas/RollResult' }
+                        game: { $ref: '#/components/schemas/GameSession' }
+
+                GameExport:
+                    description: 'Print-ready export of a completed game journal.'
+                    properties:
+                        title: { type: string, example: 'La Biblioteca' }
+                        character_name: { type: string, nullable: true }
+                        character_description: { type: string, nullable: true }
+                        genre: { type: string, nullable: true }
+                        epoch: { type: string, nullable: true }
+                        final_outcome: { type: string, enum: [hit, weak_hit, miss], nullable: true }
+                        overcome_score: { type: integer }
+                        entries:
+                            type: array
+                            items:
+                                type: object
+                                properties:
+                                    phase: { type: string }
+                                    phase_label: { type: string }
+                                    content: { type: string }
+                                    book:
+                                        type: object
+                                        nullable: true
+                                        properties:
+                                            color: { type: string }
+                                            binding: { type: string }
+                                    roll:
+                                        type: object
+                                        nullable: true
+                                        properties:
+                                            action_die: { type: integer }
+                                            challenge_die_1: { type: integer }
+                                            challenge_die_2: { type: integer }
+                                            action_score: { type: integer }
+                                            outcome: { type: string, enum: [hit, weak_hit, miss] }
+                                            attribute_type: { type: string, nullable: true }
+                        attributes:
+                            type: array
+                            items: { $ref: '#/components/schemas/Attribute' }
+
+                Error:
+                    properties:
+                        error: { type: string }
+
+                ValidationError:
+                    properties:
+                        error: { type: string, example: 'Validation failed' }
+                        details:
+                            type: object
+                            additionalProperties: { type: string }
+
         # Static definitions for firewall-handled routes (json_login / refresh_jwt)
-        # that have no controller and cannot carry #[OA\...] attributes.
+        # that have no controller and cannot carry PHP attributes.
         paths:
             /api/auth/login:
                 post:
-                    tags: ['Auth']
+                    tags: [Auth]
                     operationId: authLogin
                     summary: 'Log in and receive JWT + refresh token'
                     requestBody:
@@ -20,13 +164,8 @@ nelmio_api_doc:
                                     type: object
                                     required: [email, password]
                                     properties:
-                                        email:
-                                            type: string
-                                            format: email
-                                            example: player@example.com
-                                        password:
-                                            type: string
-                                            example: 'Secret123!'
+                                        email: { type: string, format: email, example: player@example.com }
+                                        password: { type: string, example: 'Secret123!' }
                     responses:
                         '200':
                             description: 'Login successful'
@@ -35,17 +174,13 @@ nelmio_api_doc:
                                     schema:
                                         type: object
                                         properties:
-                                            token:
-                                                type: string
-                                                description: 'JWT access token (short-lived)'
-                                            refresh_token:
-                                                type: string
-                                                description: 'Refresh token (long-lived, store in localStorage)'
+                                            token: { type: string, description: 'JWT access token (short-lived)' }
+                                            refresh_token: { type: string, description: 'Refresh token (long-lived, store in localStorage)' }
                         '401':
                             description: 'Invalid credentials'
             /api/auth/refresh:
                 post:
-                    tags: ['Auth']
+                    tags: [Auth]
                     operationId: authRefresh
                     summary: 'Exchange a refresh token for a new JWT access token'
                     requestBody:
@@ -56,9 +191,7 @@ nelmio_api_doc:
                                     type: object
                                     required: [refresh_token]
                                     properties:
-                                        refresh_token:
-                                            type: string
-                                            description: 'Refresh token obtained at login'
+                                        refresh_token: { type: string }
                     responses:
                         '200':
                             description: 'New access token issued'
@@ -67,12 +200,11 @@ nelmio_api_doc:
                                     schema:
                                         type: object
                                         properties:
-                                            token:
-                                                type: string
-                                            refresh_token:
-                                                type: string
+                                            token: { type: string }
+                                            refresh_token: { type: string }
                         '401':
                             description: 'Refresh token invalid or expired'
+
     areas:
         default:
             # Public Swagger UI at /api/doc — covers Auth + Oracle + Health.

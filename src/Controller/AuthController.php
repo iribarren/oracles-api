@@ -56,8 +56,19 @@ class AuthController extends AbstractController
             ),
             new OA\Response(
                 response: 422,
-                description: 'Validation failed',
-                content: new OA\JsonContent(ref: '#/components/schemas/ValidationError')
+                description: 'Validation failed — email/password constraints or password mismatch',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(
+                            property: 'error',
+                            type: 'object',
+                            properties: [
+                                new OA\Property(property: 'message', type: 'string', example: 'Validation failed.'),
+                                new OA\Property(property: 'details', type: 'object', additionalProperties: new OA\AdditionalProperties(type: 'array', items: new OA\Items(type: 'string'))),
+                            ]
+                        ),
+                    ]
+                )
             ),
         ]
     )]
