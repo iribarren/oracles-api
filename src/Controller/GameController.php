@@ -67,9 +67,9 @@ class GameController extends AbstractController
             ])
         ),
         responses: [
-            new OA\Response(response: 201, description: 'Game created', content: new OA\JsonContent(ref: '#/components/schemas/GameSession')),
-            new OA\Response(response: 422, description: 'Validation failed', content: new OA\JsonContent(ref: '#/components/schemas/ValidationError')),
-            new OA\Response(response: 400, description: 'Business rule violation', content: new OA\JsonContent(ref: '#/components/schemas/Error')),
+            new OA\Response(response: 201, description: 'Game created', content: new OA\JsonContent(allOf: [new OA\Schema(ref: '#/components/schemas/GameSession')])),
+            new OA\Response(response: 422, description: 'Validation failed', content: new OA\JsonContent(allOf: [new OA\Schema(ref: '#/components/schemas/ValidationError')])),
+            new OA\Response(response: 400, description: 'Business rule violation', content: new OA\JsonContent(allOf: [new OA\Schema(ref: '#/components/schemas/Error')])),
         ]
     )]
     #[Route('', name: 'api_game_create', methods: ['POST'])]
@@ -147,8 +147,8 @@ class GameController extends AbstractController
             new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid')),
         ],
         responses: [
-            new OA\Response(response: 200, description: 'Journal export document', content: new OA\JsonContent(ref: '#/components/schemas/GameExport')),
-            new OA\Response(response: 404, description: 'Game not found', content: new OA\JsonContent(ref: '#/components/schemas/Error')),
+            new OA\Response(response: 200, description: 'Journal export document', content: new OA\JsonContent(allOf: [new OA\Schema(ref: '#/components/schemas/GameExport')])),
+            new OA\Response(response: 404, description: 'Game not found', content: new OA\JsonContent(allOf: [new OA\Schema(ref: '#/components/schemas/Error')])),
         ]
     )]
     #[Route('/{id}/export', name: 'api_game_export', methods: ['GET'])]
@@ -242,8 +242,8 @@ class GameController extends AbstractController
             new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid')),
         ],
         responses: [
-            new OA\Response(response: 200, description: 'Full game state', content: new OA\JsonContent(ref: '#/components/schemas/GameSession')),
-            new OA\Response(response: 404, description: 'Game not found', content: new OA\JsonContent(ref: '#/components/schemas/Error')),
+            new OA\Response(response: 200, description: 'Full game state', content: new OA\JsonContent(allOf: [new OA\Schema(ref: '#/components/schemas/GameSession')])),
+            new OA\Response(response: 404, description: 'Game not found', content: new OA\JsonContent(allOf: [new OA\Schema(ref: '#/components/schemas/Error')])),
         ]
     )]
     #[Route('/{id}', name: 'api_game_get', methods: ['GET'])]
@@ -286,10 +286,10 @@ class GameController extends AbstractController
             )
         ),
         responses: [
-            new OA\Response(response: 200, description: 'Updated game state', content: new OA\JsonContent(ref: '#/components/schemas/GameSession')),
-            new OA\Response(response: 400, description: 'Invalid request or business rule violation', content: new OA\JsonContent(ref: '#/components/schemas/Error')),
-            new OA\Response(response: 404, description: 'Game not found', content: new OA\JsonContent(ref: '#/components/schemas/Error')),
-            new OA\Response(response: 422, description: 'Validation failed', content: new OA\JsonContent(ref: '#/components/schemas/ValidationError')),
+            new OA\Response(response: 200, description: 'Updated game state', content: new OA\JsonContent(allOf: [new OA\Schema(ref: '#/components/schemas/GameSession')])),
+            new OA\Response(response: 400, description: 'Invalid request or business rule violation', content: new OA\JsonContent(allOf: [new OA\Schema(ref: '#/components/schemas/Error')])),
+            new OA\Response(response: 404, description: 'Game not found', content: new OA\JsonContent(allOf: [new OA\Schema(ref: '#/components/schemas/Error')])),
+            new OA\Response(response: 422, description: 'Validation failed', content: new OA\JsonContent(allOf: [new OA\Schema(ref: '#/components/schemas/ValidationError')])),
         ]
     )]
     #[Route('/{id}/prologue', name: 'api_game_prologue', methods: ['POST'])]
@@ -363,9 +363,9 @@ class GameController extends AbstractController
             new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid')),
         ],
         responses: [
-            new OA\Response(response: 200, description: 'Generated book', content: new OA\JsonContent(ref: '#/components/schemas/Book')),
-            new OA\Response(response: 400, description: 'Business rule violation', content: new OA\JsonContent(ref: '#/components/schemas/Error')),
-            new OA\Response(response: 404, description: 'Game not found', content: new OA\JsonContent(ref: '#/components/schemas/Error')),
+            new OA\Response(response: 200, description: 'Generated book', content: new OA\JsonContent(allOf: [new OA\Schema(ref: '#/components/schemas/Book')])),
+            new OA\Response(response: 400, description: 'Business rule violation', content: new OA\JsonContent(allOf: [new OA\Schema(ref: '#/components/schemas/Error')])),
+            new OA\Response(response: 404, description: 'Game not found', content: new OA\JsonContent(allOf: [new OA\Schema(ref: '#/components/schemas/Error')])),
         ]
     )]
     #[Route('/{id}/chapter/book', name: 'api_game_chapter_book', methods: ['POST'])]
@@ -411,11 +411,11 @@ class GameController extends AbstractController
             )
         ),
         responses: [
-            new OA\Response(response: 200, description: 'Roll result and updated game state', content: new OA\JsonContent(ref: '#/components/schemas/RollResponse')),
-            new OA\Response(response: 400, description: 'Business rule violation', content: new OA\JsonContent(ref: '#/components/schemas/Error')),
-            new OA\Response(response: 404, description: 'Game not found', content: new OA\JsonContent(ref: '#/components/schemas/Error')),
-            new OA\Response(response: 422, description: 'Invalid attribute', content: new OA\JsonContent(ref: '#/components/schemas/ValidationError')),
-            new OA\Response(response: 429, description: 'Rate limit exceeded', content: new OA\JsonContent(ref: '#/components/schemas/Error')),
+            new OA\Response(response: 200, description: 'Roll result and updated game state', content: new OA\JsonContent(allOf: [new OA\Schema(ref: '#/components/schemas/RollResponse')])),
+            new OA\Response(response: 400, description: 'Business rule violation', content: new OA\JsonContent(allOf: [new OA\Schema(ref: '#/components/schemas/Error')])),
+            new OA\Response(response: 404, description: 'Game not found', content: new OA\JsonContent(allOf: [new OA\Schema(ref: '#/components/schemas/Error')])),
+            new OA\Response(response: 422, description: 'Invalid attribute', content: new OA\JsonContent(allOf: [new OA\Schema(ref: '#/components/schemas/ValidationError')])),
+            new OA\Response(response: 429, description: 'Rate limit exceeded', content: new OA\JsonContent(allOf: [new OA\Schema(ref: '#/components/schemas/Error')])),
         ]
     )]
     #[Route('/{id}/chapter/roll', name: 'api_game_chapter_roll', methods: ['POST'])]
@@ -475,9 +475,9 @@ class GameController extends AbstractController
             new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid')),
         ],
         responses: [
-            new OA\Response(response: 200, description: 'Updated game state', content: new OA\JsonContent(ref: '#/components/schemas/GameSession')),
-            new OA\Response(response: 400, description: 'Business rule violation', content: new OA\JsonContent(ref: '#/components/schemas/Error')),
-            new OA\Response(response: 404, description: 'Game not found', content: new OA\JsonContent(ref: '#/components/schemas/Error')),
+            new OA\Response(response: 200, description: 'Updated game state', content: new OA\JsonContent(allOf: [new OA\Schema(ref: '#/components/schemas/GameSession')])),
+            new OA\Response(response: 400, description: 'Business rule violation', content: new OA\JsonContent(allOf: [new OA\Schema(ref: '#/components/schemas/Error')])),
+            new OA\Response(response: 404, description: 'Game not found', content: new OA\JsonContent(allOf: [new OA\Schema(ref: '#/components/schemas/Error')])),
         ]
     )]
     #[Route('/{id}/chapter/advance', name: 'api_game_chapter_advance', methods: ['POST'])]
@@ -524,10 +524,10 @@ class GameController extends AbstractController
             )
         ),
         responses: [
-            new OA\Response(response: 200, description: 'Updated game state', content: new OA\JsonContent(ref: '#/components/schemas/GameSession')),
-            new OA\Response(response: 400, description: 'Business rule violation', content: new OA\JsonContent(ref: '#/components/schemas/Error')),
-            new OA\Response(response: 404, description: 'Game not found', content: new OA\JsonContent(ref: '#/components/schemas/Error')),
-            new OA\Response(response: 422, description: 'Validation failed', content: new OA\JsonContent(ref: '#/components/schemas/Error')),
+            new OA\Response(response: 200, description: 'Updated game state', content: new OA\JsonContent(allOf: [new OA\Schema(ref: '#/components/schemas/GameSession')])),
+            new OA\Response(response: 400, description: 'Business rule violation', content: new OA\JsonContent(allOf: [new OA\Schema(ref: '#/components/schemas/Error')])),
+            new OA\Response(response: 404, description: 'Game not found', content: new OA\JsonContent(allOf: [new OA\Schema(ref: '#/components/schemas/Error')])),
+            new OA\Response(response: 422, description: 'Validation failed', content: new OA\JsonContent(allOf: [new OA\Schema(ref: '#/components/schemas/Error')])),
         ]
     )]
     #[Route('/{id}/chapter/support-title', name: 'api_game_chapter_support_title', methods: ['POST'])]
@@ -593,9 +593,9 @@ class GameController extends AbstractController
             new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid')),
         ],
         responses: [
-            new OA\Response(response: 200, description: 'Generated book', content: new OA\JsonContent(ref: '#/components/schemas/Book')),
-            new OA\Response(response: 400, description: 'Business rule violation', content: new OA\JsonContent(ref: '#/components/schemas/Error')),
-            new OA\Response(response: 404, description: 'Game not found', content: new OA\JsonContent(ref: '#/components/schemas/Error')),
+            new OA\Response(response: 200, description: 'Generated book', content: new OA\JsonContent(allOf: [new OA\Schema(ref: '#/components/schemas/Book')])),
+            new OA\Response(response: 400, description: 'Business rule violation', content: new OA\JsonContent(allOf: [new OA\Schema(ref: '#/components/schemas/Error')])),
+            new OA\Response(response: 404, description: 'Game not found', content: new OA\JsonContent(allOf: [new OA\Schema(ref: '#/components/schemas/Error')])),
         ]
     )]
     #[Route('/{id}/epilogue/book', name: 'api_game_epilogue_book', methods: ['POST'])]
@@ -642,11 +642,11 @@ class GameController extends AbstractController
             )
         ),
         responses: [
-            new OA\Response(response: 200, description: 'Roll result and updated game state', content: new OA\JsonContent(ref: '#/components/schemas/RollResponse')),
-            new OA\Response(response: 400, description: 'Business rule violation', content: new OA\JsonContent(ref: '#/components/schemas/Error')),
-            new OA\Response(response: 404, description: 'Game not found', content: new OA\JsonContent(ref: '#/components/schemas/Error')),
-            new OA\Response(response: 422, description: 'Invalid attribute', content: new OA\JsonContent(ref: '#/components/schemas/ValidationError')),
-            new OA\Response(response: 429, description: 'Rate limit exceeded', content: new OA\JsonContent(ref: '#/components/schemas/Error')),
+            new OA\Response(response: 200, description: 'Roll result and updated game state', content: new OA\JsonContent(allOf: [new OA\Schema(ref: '#/components/schemas/RollResponse')])),
+            new OA\Response(response: 400, description: 'Business rule violation', content: new OA\JsonContent(allOf: [new OA\Schema(ref: '#/components/schemas/Error')])),
+            new OA\Response(response: 404, description: 'Game not found', content: new OA\JsonContent(allOf: [new OA\Schema(ref: '#/components/schemas/Error')])),
+            new OA\Response(response: 422, description: 'Invalid attribute', content: new OA\JsonContent(allOf: [new OA\Schema(ref: '#/components/schemas/ValidationError')])),
+            new OA\Response(response: 429, description: 'Rate limit exceeded', content: new OA\JsonContent(allOf: [new OA\Schema(ref: '#/components/schemas/Error')])),
         ]
     )]
     #[Route('/{id}/epilogue/action', name: 'api_game_epilogue_action', methods: ['POST'])]
@@ -717,10 +717,10 @@ class GameController extends AbstractController
             new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid')),
         ],
         responses: [
-            new OA\Response(response: 200, description: 'Final roll result and completed game state', content: new OA\JsonContent(ref: '#/components/schemas/RollResponse')),
-            new OA\Response(response: 400, description: 'Business rule violation', content: new OA\JsonContent(ref: '#/components/schemas/Error')),
-            new OA\Response(response: 404, description: 'Game not found', content: new OA\JsonContent(ref: '#/components/schemas/Error')),
-            new OA\Response(response: 429, description: 'Rate limit exceeded', content: new OA\JsonContent(ref: '#/components/schemas/Error')),
+            new OA\Response(response: 200, description: 'Final roll result and completed game state', content: new OA\JsonContent(allOf: [new OA\Schema(ref: '#/components/schemas/RollResponse')])),
+            new OA\Response(response: 400, description: 'Business rule violation', content: new OA\JsonContent(allOf: [new OA\Schema(ref: '#/components/schemas/Error')])),
+            new OA\Response(response: 404, description: 'Game not found', content: new OA\JsonContent(allOf: [new OA\Schema(ref: '#/components/schemas/Error')])),
+            new OA\Response(response: 429, description: 'Rate limit exceeded', content: new OA\JsonContent(allOf: [new OA\Schema(ref: '#/components/schemas/Error')])),
         ]
     )]
     #[Route('/{id}/epilogue/final', name: 'api_game_epilogue_final', methods: ['POST'])]
@@ -775,11 +775,11 @@ class GameController extends AbstractController
             )
         ),
         responses: [
-            new OA\Response(response: 201, description: 'Journal entry created', content: new OA\JsonContent(ref: '#/components/schemas/JournalEntry')),
-            new OA\Response(response: 400, description: 'Business rule violation', content: new OA\JsonContent(ref: '#/components/schemas/Error')),
-            new OA\Response(response: 403, description: 'Book does not belong to this game session', content: new OA\JsonContent(ref: '#/components/schemas/Error')),
-            new OA\Response(response: 404, description: 'Game or book not found', content: new OA\JsonContent(ref: '#/components/schemas/Error')),
-            new OA\Response(response: 422, description: 'Validation failed', content: new OA\JsonContent(ref: '#/components/schemas/ValidationError')),
+            new OA\Response(response: 201, description: 'Journal entry created', content: new OA\JsonContent(allOf: [new OA\Schema(ref: '#/components/schemas/JournalEntry')])),
+            new OA\Response(response: 400, description: 'Business rule violation', content: new OA\JsonContent(allOf: [new OA\Schema(ref: '#/components/schemas/Error')])),
+            new OA\Response(response: 403, description: 'Book does not belong to this game session', content: new OA\JsonContent(allOf: [new OA\Schema(ref: '#/components/schemas/Error')])),
+            new OA\Response(response: 404, description: 'Game or book not found', content: new OA\JsonContent(allOf: [new OA\Schema(ref: '#/components/schemas/Error')])),
+            new OA\Response(response: 422, description: 'Validation failed', content: new OA\JsonContent(allOf: [new OA\Schema(ref: '#/components/schemas/ValidationError')])),
         ]
     )]
     #[Route('/{id}/journal', name: 'api_game_journal_create', methods: ['POST'])]
@@ -852,7 +852,7 @@ class GameController extends AbstractController
                 description: 'Journal entries in chronological order',
                 content: new OA\JsonContent(type: 'array', items: new OA\Items(ref: '#/components/schemas/JournalEntry'))
             ),
-            new OA\Response(response: 404, description: 'Game not found', content: new OA\JsonContent(ref: '#/components/schemas/Error')),
+            new OA\Response(response: 404, description: 'Game not found', content: new OA\JsonContent(allOf: [new OA\Schema(ref: '#/components/schemas/Error')])),
         ]
     )]
     #[Route('/{id}/journal', name: 'api_game_journal_list', methods: ['GET'])]
