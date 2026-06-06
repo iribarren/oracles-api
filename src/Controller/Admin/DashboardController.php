@@ -30,5 +30,6 @@ class DashboardController extends AbstractDashboardController
         yield MenuItem::linkTo(OracleCategoryCrudController::class, 'Oracle Categories', 'fa fa-list');
         yield MenuItem::linkTo(OracleOptionCrudController::class, 'Oracle Options', 'fa fa-tags');
         yield MenuItem::linkTo(GameSessionCrudController::class, 'Game Sessions', 'fa fa-gamepad');
+        yield MenuItem::linkToUrl('API Docs', 'fa fa-book', '/admin/api/doc');
     }
 }
