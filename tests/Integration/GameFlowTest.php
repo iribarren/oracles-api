@@ -159,12 +159,18 @@ class GameFlowTest extends WebTestCase
      */
     private function runEpilogue(string $gameId): array
     {
+        // Phase epilogue_book: generate the book, then advance to action 1.
         $this->postJson("/api/game/{$gameId}/epilogue/book");
         $this->assertSame(200, $this->getLastStatusCode());
+        $this->postJson("/api/game/{$gameId}/epilogue/advance");
+        $this->assertSame(200, $this->getLastStatusCode());
 
+        // Each action: roll (does not advance), then advance to the next phase.
         $attributes = ['body', 'mind', 'social'];
         foreach ($attributes as $attribute) {
             $this->postJson("/api/game/{$gameId}/epilogue/action", ['attribute' => $attribute]);
+            $this->assertSame(200, $this->getLastStatusCode());
+            $this->postJson("/api/game/{$gameId}/epilogue/advance");
             $this->assertSame(200, $this->getLastStatusCode());
         }
 
@@ -532,6 +538,7 @@ class GameFlowTest extends WebTestCase
         $this->runChapter($game['id'], 'social');
 
         $this->postJson("/api/game/{$game['id']}/epilogue/book");
+        $this->postJson("/api/game/{$game['id']}/epilogue/advance");
         $this->postJson("/api/game/{$game['id']}/epilogue/action", ['attribute' => 'body']);
         $this->assertSame(200, $this->getLastStatusCode());
     }
@@ -545,6 +552,7 @@ class GameFlowTest extends WebTestCase
         $this->runChapter($game['id'], 'social');
 
         $this->postJson("/api/game/{$game['id']}/epilogue/book");
+        $this->postJson("/api/game/{$game['id']}/epilogue/advance");
         $data = $this->postJson("/api/game/{$game['id']}/epilogue/action", ['attribute' => 'body']);
 
         $this->assertGreaterThan(0, $data['game']['overcome_score']);
@@ -559,6 +567,7 @@ class GameFlowTest extends WebTestCase
         $this->runChapter($game['id'], 'social');
 
         $this->postJson("/api/game/{$game['id']}/epilogue/book");
+        $this->postJson("/api/game/{$game['id']}/epilogue/advance");
         $this->postJson("/api/game/{$game['id']}/epilogue/action", ['attribute' => 'bad']);
         $this->assertSame(422, $this->getLastStatusCode());
     }
@@ -574,12 +583,8 @@ class GameFlowTest extends WebTestCase
         $this->runChapter($game['id'], 'body');
         $this->runChapter($game['id'], 'mind');
         $this->runChapter($game['id'], 'social');
-        $this->postJson("/api/game/{$game['id']}/epilogue/book");
-        $this->postJson("/api/game/{$game['id']}/epilogue/action", ['attribute' => 'body']);
-        $this->postJson("/api/game/{$game['id']}/epilogue/action", ['attribute' => 'mind']);
-        $this->postJson("/api/game/{$game['id']}/epilogue/action", ['attribute' => 'social']);
 
-        $this->postJson("/api/game/{$game['id']}/epilogue/final");
+        $this->runEpilogue($game['id']);
         $this->assertSame(200, $this->getLastStatusCode());
     }
 
@@ -590,12 +595,8 @@ class GameFlowTest extends WebTestCase
         $this->runChapter($game['id'], 'body');
         $this->runChapter($game['id'], 'mind');
         $this->runChapter($game['id'], 'social');
-        $this->postJson("/api/game/{$game['id']}/epilogue/book");
-        $this->postJson("/api/game/{$game['id']}/epilogue/action", ['attribute' => 'body']);
-        $this->postJson("/api/game/{$game['id']}/epilogue/action", ['attribute' => 'mind']);
-        $this->postJson("/api/game/{$game['id']}/epilogue/action", ['attribute' => 'social']);
 
-        $data = $this->postJson("/api/game/{$game['id']}/epilogue/final");
+        $data = $this->runEpilogue($game['id']);
         $this->assertSame('completed', $data['game']['current_phase']);
     }
 
@@ -630,28 +631,36 @@ class GameFlowTest extends WebTestCase
         $afterChapter2 = $this->runChapter($game['id'], 'mind');
         $this->assertSame('chapter_3', $afterChapter2['game']['current_phase']);
 
-        // 5. Chapter 3
+        // 5. Chapter 3 → epilogue book
         $afterChapter3 = $this->runChapter($game['id'], 'social');
-        $this->assertSame('epilogue_action_1', $afterChapter3['game']['current_phase']);
+        $this->assertSame('epilogue_book', $afterChapter3['game']['current_phase']);
 
-        // 6. Epilogue book
+        // 6. Epilogue book, then advance to the first action
         $epilogueBook = $this->postJson("/api/game/{$game['id']}/epilogue/book");
         $this->assertNotEmpty($epilogueBook['color']);
+        $afterBook = $this->postJson("/api/game/{$game['id']}/epilogue/advance");
+        $this->assertSame('epilogue_action_1', $afterBook['current_phase']);
 
-        // 7. Epilogue action 1
+        // 7. Epilogue action 1 — the roll does not advance; advancing is a separate step
         $action1 = $this->postJson("/api/game/{$game['id']}/epilogue/action", ['attribute' => 'body']);
-        $this->assertSame('epilogue_action_2', $action1['game']['current_phase']);
+        $this->assertSame('epilogue_action_1', $action1['game']['current_phase']);
         $this->assertGreaterThan(0, $action1['game']['overcome_score']);
+        $afterAction1 = $this->postJson("/api/game/{$game['id']}/epilogue/advance");
+        $this->assertSame('epilogue_action_2', $afterAction1['current_phase']);
 
         // 8. Epilogue action 2
         $action2 = $this->postJson("/api/game/{$game['id']}/epilogue/action", ['attribute' => 'mind']);
-        $this->assertSame('epilogue_action_3', $action2['game']['current_phase']);
+        $this->assertSame('epilogue_action_2', $action2['game']['current_phase']);
         $this->assertGreaterThan($action1['game']['overcome_score'], $action2['game']['overcome_score']);
+        $afterAction2 = $this->postJson("/api/game/{$game['id']}/epilogue/advance");
+        $this->assertSame('epilogue_action_3', $afterAction2['current_phase']);
 
         // 9. Epilogue action 3
         $action3 = $this->postJson("/api/game/{$game['id']}/epilogue/action", ['attribute' => 'social']);
-        $this->assertSame('epilogue_final', $action3['game']['current_phase']);
+        $this->assertSame('epilogue_action_3', $action3['game']['current_phase']);
         $this->assertGreaterThan($action2['game']['overcome_score'], $action3['game']['overcome_score']);
+        $afterAction3 = $this->postJson("/api/game/{$game['id']}/epilogue/advance");
+        $this->assertSame('epilogue_final', $afterAction3['current_phase']);
 
         // overcome_score must be between 3 and 9 (1-3 per action)
         $this->assertGreaterThanOrEqual(3, $action3['game']['overcome_score']);

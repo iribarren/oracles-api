@@ -167,11 +167,11 @@ class GameEngine
 
     /**
      * Generates and persists the single book used during the entire epilogue.
-     * Must be called when the game is in EPILOGUE_ACTION_1.
+     * Must be called when the game is in EPILOGUE_BOOK.
      */
     public function generateEpilogueBook(GameSession $game): Book
     {
-        $this->assertPhase($game, GamePhase::EPILOGUE_ACTION_1);
+        $this->assertPhase($game, GamePhase::EPILOGUE_BOOK);
 
         $book = $this->bookGenerator->generateBook($game, $game->getCurrentPhase());
         $game->addBook($book);
@@ -244,12 +244,68 @@ class GameEngine
         };
 
         $game->setOvercomeScore($game->getOvercomeScore() + $overcomePoints);
-        $game->setCurrentPhase($game->getCurrentPhase()->next());
+        // NOTE: the roll does NOT advance the phase. Advancing happens on the
+        // explicit advanceEpilogue() step (after the post-roll journal), mirroring
+        // resolveChapter() / advanceChapter(). This keeps each action's journal
+        // entry tagged with that action's phase.
         $game->addRollResult($rollResult);
 
         $this->entityManager->flush();
 
         return $rollResult;
+    }
+
+    /**
+     * Advances the epilogue one step, mirroring advanceChapter():
+     *   EPILOGUE_BOOK     → EPILOGUE_ACTION_1 (requires the epilogue book generated)
+     *   EPILOGUE_ACTION_N → next (requires the action roll already resolved)
+     *
+     * The phase transition is user-driven (after the journal entry is written),
+     * so journal entries stay tagged with the phase they were written in.
+     */
+    public function advanceEpilogue(GameSession $game): GameSession
+    {
+        $phase = $game->getCurrentPhase();
+
+        if ($phase === GamePhase::EPILOGUE_BOOK) {
+            $hasEpilogueBook = false;
+            foreach ($game->getBooks() as $book) {
+                if (str_starts_with($book->getPhase()->value, 'epilogue')) {
+                    $hasEpilogueBook = true;
+                    break;
+                }
+            }
+            if (!$hasEpilogueBook) {
+                throw new LogicException('Cannot advance: epilogue book not yet generated.');
+            }
+
+            $game->setCurrentPhase($phase->next());
+            $this->entityManager->flush();
+
+            return $game;
+        }
+
+        if ($phase->isEpilogueAction()) {
+            $hasRoll = false;
+            foreach ($game->getRollResults() as $r) {
+                if ($r->getPhase() === $phase) {
+                    $hasRoll = true;
+                    break;
+                }
+            }
+            if (!$hasRoll) {
+                throw new LogicException('Cannot advance: epilogue action roll not yet resolved.');
+            }
+
+            $game->setCurrentPhase($phase->next());
+            $this->entityManager->flush();
+
+            return $game;
+        }
+
+        throw new LogicException(
+            \sprintf('Cannot advance epilogue in phase "%s".', $phase->value)
+        );
     }
 
     /**

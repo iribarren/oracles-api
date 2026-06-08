@@ -34,6 +34,7 @@ class GameController extends AbstractController
         'chapter_1'          => 'Capítulo I',
         'chapter_2'          => 'Capítulo II',
         'chapter_3'          => 'Capítulo III',
+        'epilogue_book'      => 'Epílogo — Desafío',
         'epilogue_action_1'  => 'Epílogo — Acción 1',
         'epilogue_action_2'  => 'Epílogo — Acción 2',
         'epilogue_action_3'  => 'Epílogo — Acción 3',
@@ -617,6 +618,45 @@ class GameController extends AbstractController
         }
 
         return $this->json($this->serializeBook($book));
+    }
+
+    // -------------------------------------------------------------------------
+    // POST /api/game/{id}/epilogue/advance — Advance the epilogue one step
+    // -------------------------------------------------------------------------
+
+    #[OA\Post(
+        path: '/api/game/{id}/epilogue/advance',
+        operationId: 'advanceEpilogue',
+        summary: 'Advance the epilogue (book → action 1, or action N → next) after the journal entry',
+        tags: ['Game'],
+        parameters: [
+            new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'string', format: 'uuid')),
+        ],
+        responses: [
+            new OA\Response(response: 200, description: 'Updated game state', content: new OA\JsonContent(allOf: [new OA\Schema(ref: '#/components/schemas/GameSession')])),
+            new OA\Response(response: 400, description: 'Business rule violation', content: new OA\JsonContent(allOf: [new OA\Schema(ref: '#/components/schemas/Error')])),
+            new OA\Response(response: 404, description: 'Game not found', content: new OA\JsonContent(allOf: [new OA\Schema(ref: '#/components/schemas/Error')])),
+        ]
+    )]
+    #[Route('/{id}/epilogue/advance', name: 'api_game_epilogue_advance', methods: ['POST'])]
+    public function epilogueAdvance(string $id): JsonResponse
+    {
+        $game = $this->findGame($id);
+        if ($game === null) {
+            return $this->json(['error' => 'Game session not found'], 404);
+        }
+
+        if (!$this->isGranted(GameSessionVoter::VIEW, $game)) {
+            return $this->json(['error' => 'Access denied'], 403);
+        }
+
+        try {
+            $this->gameEngine->advanceEpilogue($game);
+        } catch (LogicException | InvalidArgumentException $e) {
+            return $this->json(['error' => $e->getMessage()], 400);
+        }
+
+        return $this->json($this->serializeGameState($game));
     }
 
     // -------------------------------------------------------------------------

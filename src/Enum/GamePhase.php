@@ -10,6 +10,7 @@ enum GamePhase: string
     case CHAPTER_1          = 'chapter_1';
     case CHAPTER_2          = 'chapter_2';
     case CHAPTER_3          = 'chapter_3';
+    case EPILOGUE_BOOK      = 'epilogue_book';
     case EPILOGUE_ACTION_1  = 'epilogue_action_1';
     case EPILOGUE_ACTION_2  = 'epilogue_action_2';
     case EPILOGUE_ACTION_3  = 'epilogue_action_3';
@@ -32,7 +33,8 @@ enum GamePhase: string
             self::PROLOGUE          => self::CHAPTER_1,
             self::CHAPTER_1         => self::CHAPTER_2,
             self::CHAPTER_2         => self::CHAPTER_3,
-            self::CHAPTER_3         => self::EPILOGUE_ACTION_1,
+            self::CHAPTER_3         => self::EPILOGUE_BOOK,
+            self::EPILOGUE_BOOK     => self::EPILOGUE_ACTION_1,
             self::EPILOGUE_ACTION_1 => self::EPILOGUE_ACTION_2,
             self::EPILOGUE_ACTION_2 => self::EPILOGUE_ACTION_3,
             self::EPILOGUE_ACTION_3 => self::EPILOGUE_FINAL,

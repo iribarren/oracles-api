@@ -19,7 +19,7 @@ Symfony 7.2 REST API for TTRPG games. Currently powers "The Library" (La Bibliot
 - `User` — admin authentication (email, hashed password, roles)
 
 ## Enums
-- `GamePhase` — prologue, chapter_1-3, epilogue_action_1-3, epilogue_final, completed
+- `GamePhase` — prologue, chapter_1-3, epilogue_book, epilogue_action_1-3, epilogue_final, completed
 - `AttributeType` — body, mind, social
 - `RollOutcome` — hit, weak_hit, miss
 
@@ -51,13 +51,13 @@ Symfony 7.2 REST API for TTRPG games. Currently powers "The Library" (La Bibliot
 
 The project uses Spec-Driven Development. The `features/` directory contains executable Gherkin specs that ARE the contract for every business rule. Read them before changing any logic.
 
-**62 scenarios across 9 feature files — all must stay green.**
+**68 scenarios across 9 feature files — all must stay green.**
 
 | Feature file | What it pins |
 | --- | --- |
 | `features/prologue.feature` | Initial state, character creation, phase transition to chapter_1 |
 | `features/chapters.feature` | hit/weak_hit/miss effects on background/support, modifier math, phase transitions, attribute reuse ban, support title |
-| `features/epilogue.feature` | overcome_score accumulation, single-use support bonus, automatic advance, final roll outcomes, full playthrough |
+| `features/epilogue.feature` | epilogue_book discovery phase, overcome_score accumulation, single-use support bonus, decoupled action roll/advance (mirrors chapters), final roll outcomes, full playthrough |
 | `features/authentication.feature` | Registration (validation, anti-enumeration), login, throttling, profile, token refresh |
 | `features/game-lifecycle.feature` | Anonymous vs owned sessions, GameSessionVoter (403), player session listing |
 | `features/oracles.feature` | Fallback to constants (empty DB) and DB-first read when seeded |

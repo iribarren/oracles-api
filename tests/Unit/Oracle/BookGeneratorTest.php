@@ -46,9 +46,9 @@ class BookGeneratorTest extends TestCase
 
     public function testGenerateBookSetsEpiloguePhase(): void
     {
-        $book = $this->bookGenerator->generateBook($this->gameSession, GamePhase::EPILOGUE_ACTION_1);
+        $book = $this->bookGenerator->generateBook($this->gameSession, GamePhase::EPILOGUE_BOOK);
 
-        $this->assertSame(GamePhase::EPILOGUE_ACTION_1, $book->getPhase());
+        $this->assertSame(GamePhase::EPILOGUE_BOOK, $book->getPhase());
     }
 
     public function testGenerateBookColorIsNonEmptyString(): void
