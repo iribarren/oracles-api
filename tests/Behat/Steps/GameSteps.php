@@ -193,6 +193,14 @@ trait GameSteps
     }
 
     /**
+     * @When I advance the epilogue
+     */
+    public function iAdvanceTheEpilogue(): void
+    {
+        $this->sendGameRequest('POST', '/epilogue/advance');
+    }
+
+    /**
      * @When I resolve the epilogue action using :attr
      */
     public function iResolveTheEpilogueActionUsing(string $attr): void

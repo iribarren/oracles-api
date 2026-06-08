@@ -114,9 +114,24 @@ class GamePhaseTest extends TestCase
         $this->assertSame(GamePhase::CHAPTER_3, GamePhase::CHAPTER_2->next());
     }
 
-    public function testNextFromChapter3IsEpilogueAction1(): void
+    public function testNextFromChapter3IsEpilogueBook(): void
     {
-        $this->assertSame(GamePhase::EPILOGUE_ACTION_1, GamePhase::CHAPTER_3->next());
+        $this->assertSame(GamePhase::EPILOGUE_BOOK, GamePhase::CHAPTER_3->next());
+    }
+
+    public function testNextFromEpilogueBookIsEpilogueAction1(): void
+    {
+        $this->assertSame(GamePhase::EPILOGUE_ACTION_1, GamePhase::EPILOGUE_BOOK->next());
+    }
+
+    public function testEpilogueBookIsNotChapter(): void
+    {
+        $this->assertFalse(GamePhase::EPILOGUE_BOOK->isChapter());
+    }
+
+    public function testEpilogueBookIsNotEpilogueAction(): void
+    {
+        $this->assertFalse(GamePhase::EPILOGUE_BOOK->isEpilogueAction());
     }
 
     public function testNextFromEpilogueAction1IsEpilogueAction2(): void
@@ -151,6 +166,7 @@ class GamePhaseTest extends TestCase
             GamePhase::CHAPTER_1,
             GamePhase::CHAPTER_2,
             GamePhase::CHAPTER_3,
+            GamePhase::EPILOGUE_BOOK,
             GamePhase::EPILOGUE_ACTION_1,
             GamePhase::EPILOGUE_ACTION_2,
             GamePhase::EPILOGUE_ACTION_3,
@@ -174,6 +190,7 @@ class GamePhaseTest extends TestCase
         $this->assertSame('chapter_1',          GamePhase::CHAPTER_1->value);
         $this->assertSame('chapter_2',          GamePhase::CHAPTER_2->value);
         $this->assertSame('chapter_3',          GamePhase::CHAPTER_3->value);
+        $this->assertSame('epilogue_book',      GamePhase::EPILOGUE_BOOK->value);
         $this->assertSame('epilogue_action_1',  GamePhase::EPILOGUE_ACTION_1->value);
         $this->assertSame('epilogue_action_2',  GamePhase::EPILOGUE_ACTION_2->value);
         $this->assertSame('epilogue_action_3',  GamePhase::EPILOGUE_ACTION_3->value);
